@@ -45,7 +45,7 @@
 void
 pcl_ros::ConvexHull2D::onInit()
 {
-  PCLNodelet::onInit();
+  //PCLNodelet::onInit();
 
   pub_output_ = advertise<PointCloud>(*pnh_, "output", max_queue_size_);
   pub_plane_ = advertise<geometry_msgs::PolygonStamped>(*pnh_, "output_polygon", max_queue_size_);
@@ -53,7 +53,7 @@ pcl_ros::ConvexHull2D::onInit()
   // ---[ Optional parameters
   pnh_->getParam("use_indices", use_indices_);
 
-  NODELET_DEBUG(
+  RCLCPP_DEBUG(
     "[%s::onInit] Nodelet successfully created with the following parameters:\n"
     " - use_indices    : %s",
     getName().c_str(),
@@ -130,7 +130,7 @@ pcl_ros::ConvexHull2D::input_indices_callback(
 
   // If cloud is given, check if it's valid
   if (!isValid(cloud)) {
-    NODELET_ERROR("[%s::input_indices_callback] Invalid input!", getName().c_str());
+    RCLCPP_ERROR("[%s::input_indices_callback] Invalid input!", getName().c_str());
     // Publish an empty message
     output.header = cloud->header;
     pub_output_.publish(ros_ptr(output.makeShared()));
@@ -138,7 +138,7 @@ pcl_ros::ConvexHull2D::input_indices_callback(
   }
   // If indices are given, check if they are valid
   if (indices && !isValid(indices, "indices")) {
-    NODELET_ERROR("[%s::input_indices_callback] Invalid indices!", getName().c_str());
+    RCLCPP_ERROR("[%s::input_indices_callback] Invalid indices!", getName().c_str());
     // Publish an empty message
     output.header = cloud->header;
     pub_output_.publish(ros_ptr(output.makeShared()));
@@ -147,7 +147,7 @@ pcl_ros::ConvexHull2D::input_indices_callback(
 
   /// DEBUG
   if (indices) {
-    NODELET_DEBUG(
+    RCLCPP_DEBUG(
       "[%s::input_indices_model_callback]\n"
       "                                 - PointCloud with %d data points (%s), stamp %f, and "
       "frame %s on topic %s received.\n"
@@ -160,7 +160,7 @@ pcl_ros::ConvexHull2D::input_indices_callback(
       indices->indices.size(), indices->header.stamp.toSec(),
       indices->header.frame_id.c_str(), getMTPrivateNodeHandle().resolveName("indices").c_str());
   } else {
-    NODELET_DEBUG(
+    RCLCPP_DEBUG(
       "[%s::input_indices_callback] PointCloud with %d data points, stamp %f, and "
       "frame %s on topic %s received.",
       getName().c_str(), cloud->width * cloud->height, fromPCL(

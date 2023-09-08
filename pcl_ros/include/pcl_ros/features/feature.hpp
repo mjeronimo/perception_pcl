@@ -45,12 +45,12 @@
 #include <message_filters/pass_through.h>
 
 // Dynamic reconfigure
-#include <dynamic_reconfigure/server.h>
+//#include <dynamic_reconfigure/server.h>
 
 // PCL conversions
 #include <pcl_conversions/pcl_conversions.h>
 
-#include "pcl_ros/pcl_nodelet.hpp"
+#include "pcl_ros/pcl_node.hpp"
 #include "pcl_ros/FeatureConfig.hpp"
 
 namespace pcl_ros
@@ -64,7 +64,7 @@ namespace sync_policies = message_filters::sync_policies;
   * are applicable to all features are defined here as static methods.
   * \author Radu Bogdan Rusu
   */
-class Feature : public PCLNodelet
+class Feature : public PCLNode
 {
 public:
   typedef pcl::KdTree<pcl::PointXYZ> KdTree;
@@ -109,7 +109,7 @@ protected:
   message_filters::Subscriber<PointCloudIn> sub_surface_filter_;
 
   /** \brief The input PointCloud subscriber. */
-  ros::Subscriber sub_input_;
+  rclcpp::Subscription<PointCloud>::SharedPtr sub_input_;
 
   /** \brief Set to true if the nodelet needs to listen for incoming point
    * clouds representing the search surface.
@@ -124,7 +124,7 @@ protected:
   int spatial_locator_type_;
 
   /** \brief Pointer to a dynamic reconfigure service. */
-  boost::shared_ptr<dynamic_reconfigure::Server<FeatureConfig>> srv_;
+  //boost::shared_ptr<dynamic_reconfigure::Server<FeatureConfig>> srv_;
 
   /** \brief Child initialization routine. Internal method. */
   virtual bool childInit(ros::NodeHandle & nh) = 0;

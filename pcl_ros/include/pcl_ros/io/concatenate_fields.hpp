@@ -84,10 +84,10 @@ public:
 
 private:
   /** \brief The input PointCloud subscriber. */
-  ros::Subscriber sub_input_;
+  rclcpp::Subscription<PointCloud>::SharedPtr sub_input_;
 
   /** \brief The output PointCloud publisher. */
-  ros::Publisher pub_output_;
+  rclcpp::Publisher<PointCloud>::SharedPtr pub_output_;
 
   /** \brief The number of input messages that we expect on the input topic. */
   int input_messages_;

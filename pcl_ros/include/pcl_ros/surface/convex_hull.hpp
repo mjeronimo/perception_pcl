@@ -39,8 +39,8 @@
 #define PCL_ROS__SURFACE__CONVEX_HULL_HPP_
 
 #include <pcl/surface/convex_hull.h>
-#include <dynamic_reconfigure/server.h>
-#include "pcl_ros/pcl_nodelet.hpp"
+//#include <dynamic_reconfigure/server.h>
+#include "pcl_ros/pcl_node.hpp"
 
 namespace pcl_ros
 {
@@ -49,7 +49,7 @@ namespace sync_policies = message_filters::sync_policies;
 /** \brief @b ConvexHull2D represents a 2D ConvexHull implementation.
   * \author Radu Bogdan Rusu
   */
-class ConvexHull2D : public PCLNodelet
+class ConvexHull2D : public PCLNode
 {
   typedef pcl::PointCloud<pcl::PointXYZ> PointCloud;
   typedef boost::shared_ptr<PointCloud> PointCloudPtr;
@@ -76,10 +76,10 @@ private:
   pcl::ConvexHull<pcl::PointXYZ> impl_;
 
   /** \brief The input PointCloud subscriber. */
-  ros::Subscriber sub_input_;
+  rclcpp::Subscription<PointCloud>::SharedPtr sub_input_;
 
   /** \brief Publisher for PolygonStamped. */
-  ros::Publisher pub_plane_;
+  rclcpp::Publisher<PolygonStamped>::SharedPtr pub_plane_;
 
   /** \brief Synchronized input, and indices.*/
   boost::shared_ptr<message_filters::Synchronizer<sync_policies::ExactTime<PointCloud,

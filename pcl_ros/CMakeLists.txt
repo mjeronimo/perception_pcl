@@ -15,6 +15,7 @@ find_package(PCL REQUIRED QUIET COMPONENTS common features filters io segmentati
 ## Find ROS package dependencies
 find_package(ament_cmake REQUIRED)
 find_package(pcl_conversions REQUIRED)
+find_package(message_filters REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rclcpp_components REQUIRED)
 find_package(sensor_msgs REQUIRED)
@@ -22,9 +23,11 @@ find_package(geometry_msgs REQUIRED)
 find_package(tf2 REQUIRED)
 find_package(tf2_geometry_msgs REQUIRED)
 find_package(tf2_ros REQUIRED)
+find_package(XMLRPC REQUIRED)
 
 set(dependencies
   pcl_conversions
+  message_filters
   rclcpp
   rclcpp_components
   sensor_msgs
@@ -34,6 +37,7 @@ set(dependencies
   tf2_ros
   EIGEN3
   PCL
+  XMLRPC
 )
 
 ## Declare the pcl_ros_tf library
@@ -124,17 +128,17 @@ rclcpp_components_register_node(pcl_ros_filters
 class_loader_hide_library_symbols(pcl_ros_filters)
 #
 ### Declare the pcl_ros_segmentation library
-#add_library (pcl_ros_segmentation
-#  src/pcl_ros/segmentation/extract_clusters.cpp
-#  src/pcl_ros/segmentation/extract_polygonal_prism_data.cpp
-#  src/pcl_ros/segmentation/sac_segmentation.cpp
-#  src/pcl_ros/segmentation/segment_differences.cpp
-#  src/pcl_ros/segmentation/segmentation.cpp
-#)
-#target_link_libraries(pcl_ros_segmentation pcl_ros_tf ${Boost_LIBRARIES} ${catkin_LIBRARIES} ${PCL_LIBRARIES})
-#add_dependencies(pcl_ros_segmentation ${PROJECT_NAME}_gencfg)
-#class_loader_hide_library_symbols(pcl_ros_segmentation)
-#
+add_library (pcl_ros_segmentation
+  src/pcl_ros/segmentation/extract_clusters.cpp
+  src/pcl_ros/segmentation/extract_polygonal_prism_data.cpp
+  src/pcl_ros/segmentation/sac_segmentation.cpp
+  src/pcl_ros/segmentation/segment_differences.cpp
+  src/pcl_ros/segmentation/segmentation.cpp
+)
+target_link_libraries(pcl_ros_segmentation pcl_ros_tf ${Boost_LIBRARIES} ${catkin_LIBRARIES} ${PCL_LIBRARIES})
+ament_target_dependencies(pcl_ros_segmentation message_filters ${dependencies})
+class_loader_hide_library_symbols(pcl_ros_segmentation)
+
 ### Declare the pcl_ros_surface library
 #add_library (pcl_ros_surface
 #  src/pcl_ros/surface/surface.cpp
@@ -216,7 +220,7 @@ install(
 #    pcl_ros_features
     pcl_ros_filters
 #    pcl_ros_surface
-#    pcl_ros_segmentation
+    pcl_ros_segmentation
 #    pointcloud_to_pcd
 #    bag_to_pcd
 #    convert_pcd_to_image

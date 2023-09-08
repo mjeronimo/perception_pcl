@@ -57,7 +57,7 @@ void
 pcl_ros::Feature::onInit()
 {
   // Call the super onInit ()
-  PCLNodelet::onInit();
+  //PCLNodelet::onInit();
 
   // Call the child init
   childInit(*pnh_);
@@ -69,16 +69,18 @@ pcl_ros::Feature::onInit()
 
   // ---[ Mandatory parameters
   if (!pnh_->getParam("k_search", k_) && !pnh_->getParam("radius_search", search_radius_)) {
-    NODELET_ERROR(
+    RCLCPP_ERROR(
+      get_logger(),
       "[%s::onInit] Neither 'k_search' nor 'radius_search' set! Need to set at least one of these "
       "parameters before continuing.",
-      getName().c_str());
+      get_name().c_str());
     return;
   }
   if (!pnh_->getParam("spatial_locator", spatial_locator_type_)) {
-    NODELET_ERROR(
+    RCLCPP_ERROR(
+      get_logger(),
       "[%s::onInit] Need a 'spatial_locator' parameter to be set before continuing!",
-      getName().c_str());
+      get_name().c_str());
     return;
   }
 
@@ -86,10 +88,10 @@ pcl_ros::Feature::onInit()
   pnh_->getParam("use_surface", use_surface_);
 
   // Enable the dynamic reconfigure service
-  srv_ = boost::make_shared<dynamic_reconfigure::Server<FeatureConfig>>(*pnh_);
-  dynamic_reconfigure::Server<FeatureConfig>::CallbackType f = boost::bind(
-    &Feature::config_callback, this, _1, _2);
-  srv_->setCallback(f);
+  //srv_ = boost::make_shared<dynamic_reconfigure::Server<FeatureConfig>>(*pnh_);
+  //dynamic_reconfigure::Server<FeatureConfig>::CallbackType f = boost::bind(
+    //&Feature::config_callback, this, _1, _2);
+  //srv_->setCallback(f);
 
   // If we're supposed to look for PointIndices (indices) or PointCloud (surface) messages
   if (use_indices_ || use_surface_) {
@@ -169,13 +171,14 @@ pcl_ros::Feature::onInit()
         PointIndicesConstPtr()));
   }
 
-  NODELET_DEBUG(
+  RCLCPP_DEBUG(
+    get_logger(),
     "[%s::onInit] Nodelet successfully created with the following parameters:\n"
     " - use_surface    : %s\n"
     " - k_search       : %d\n"
     " - radius_search  : %f\n"
     " - spatial_locator: %d",
-    getName().c_str(),
+    get_name().c_str(),
     (use_surface_) ? "true" : "false", k_, search_radius_, spatial_locator_type_);
 }
 
@@ -185,12 +188,14 @@ pcl_ros::Feature::config_callback(FeatureConfig & config, uint32_t level)
 {
   if (k_ != config.k_search) {
     k_ = config.k_search;
-    NODELET_DEBUG(
+    RCLCPP_DEBUG(
+      get_logger(),
       "[config_callback] Setting the number of K nearest neighbors to use for each point: %d.", k_);
   }
   if (search_radius_ != config.radius_search) {
     search_radius_ = config.radius_search;
-    NODELET_DEBUG(
+    RCLCPP_DEBUG(
+      get_logger(),
       "[config_callback] Setting the nearest neighbors search radius for each point: %f.",
       search_radius_);
   }
@@ -209,21 +214,21 @@ pcl_ros::Feature::input_surface_indices_callback(
 
   // If cloud is given, check if it's valid
   if (!isValid(cloud)) {
-    NODELET_ERROR("[%s::input_surface_indices_callback] Invalid input!", getName().c_str());
+    RCLCPP_ERROR(get_logger(), "[%s::input_surface_indices_callback] Invalid input!", getName().c_str());
     emptyPublish(cloud);
     return;
   }
 
   // If surface is given, check if it's valid
   if (cloud_surface && !isValid(cloud_surface, "surface")) {
-    NODELET_ERROR("[%s::input_surface_indices_callback] Invalid input surface!", getName().c_str());
+    RCLCPP_ERROR(get_logger(), "[%s::input_surface_indices_callback] Invalid input surface!", getName().c_str());
     emptyPublish(cloud);
     return;
   }
 
   // If indices are given, check if they are valid
   if (indices && !isValid(indices)) {
-    NODELET_ERROR("[%s::input_surface_indices_callback] Invalid input indices!", getName().c_str());
+    RCLCPP_ERROR(get_logger(), "[%s::input_surface_indices_callback] Invalid input indices!", getName().c_str());
     emptyPublish(cloud);
     return;
   }
@@ -231,7 +236,8 @@ pcl_ros::Feature::input_surface_indices_callback(
   /// DEBUG
   if (cloud_surface) {
     if (indices) {
-      NODELET_DEBUG(
+      RCLCPP_DEBUG(
+        get_logger(),
         "[input_surface_indices_callback]\n"
         "                                         - PointCloud with %d data points (%s), stamp %f, "
         "and frame %s on topic %s received.\n"
@@ -249,7 +255,8 @@ pcl_ros::Feature::input_surface_indices_callback(
         indices->indices.size(), indices->header.stamp.toSec(),
         indices->header.frame_id.c_str(), pnh_->resolveName("indices").c_str());
     } else {
-      NODELET_DEBUG(
+      RCLCPP_DEBUG(
+        get_logger(),
         "[input_surface_indices_callback]\n"
         "                                 - PointCloud with %d data points (%s), stamp %f, and "
         "frame %s on topic %s received.\n"
@@ -264,7 +271,8 @@ pcl_ros::Feature::input_surface_indices_callback(
         cloud_surface->header.frame_id.c_str(), pnh_->resolveName("surface").c_str());
     }
   } else if (indices) {
-    NODELET_DEBUG(
+    RCLCPP_DEBUG(
+      get_logger(),
       "[input_surface_indices_callback]\n"
       "                                 - PointCloud with %d data points (%s), stamp %f, and "
       "frame %s on topic %s received.\n"
@@ -276,7 +284,8 @@ pcl_ros::Feature::input_surface_indices_callback(
       indices->indices.size(), indices->header.stamp.toSec(),
       indices->header.frame_id.c_str(), pnh_->resolveName("indices").c_str());
   } else {
-    NODELET_DEBUG(
+    RCLCPP_DEBUG(
+      get_logger(),
       "[input_surface_indices_callback] PointCloud with %d data points, stamp %f, and "
       "frame %s on topic %s received.", cloud->width * cloud->height,
       cloud->header.stamp.toSec(), cloud->header.frame_id.c_str(), pnh_->resolveName(
@@ -286,7 +295,8 @@ pcl_ros::Feature::input_surface_indices_callback(
 
 
   if (static_cast<int>(cloud->width * cloud->height) < k_) {
-    NODELET_ERROR(
+    RCLCPP_ERROR(
+      get_logger(),
       "[input_surface_indices_callback] Requested number of k-nearest neighbors (%d) is larger "
       "than the PointCloud size (%d)!", k_,
       (int)(cloud->width * cloud->height));
@@ -324,16 +334,18 @@ pcl_ros::FeatureFromNormals::onInit()
 
   // ---[ Mandatory parameters
   if (!pnh_->getParam("k_search", k_) && !pnh_->getParam("radius_search", search_radius_)) {
-    NODELET_ERROR(
+    RCLCPP_ERROR(
+      get_logger(),
       "[%s::onInit] Neither 'k_search' nor 'radius_search' set! Need to set at least one of these "
       "parameters before continuing.",
-      getName().c_str());
+      get_name().c_str());
     return;
   }
   if (!pnh_->getParam("spatial_locator", spatial_locator_type_)) {
-    NODELET_ERROR(
+    RCLCPP_ERROR(
+      get_logger(),
       "[%s::onInit] Need a 'spatial_locator' parameter to be set before continuing!",
-      getName().c_str());
+      get_name().c_str());
     return;
   }
   // ---[ Optional parameters
@@ -343,10 +355,10 @@ pcl_ros::FeatureFromNormals::onInit()
   sub_normals_filter_.subscribe(*pnh_, "normals", max_queue_size_);
 
   // Enable the dynamic reconfigure service
-  srv_ = boost::make_shared<dynamic_reconfigure::Server<FeatureConfig>>(*pnh_);
-  dynamic_reconfigure::Server<FeatureConfig>::CallbackType f = boost::bind(
-    &FeatureFromNormals::config_callback, this, _1, _2);
-  srv_->setCallback(f);
+  //srv_ = boost::make_shared<dynamic_reconfigure::Server<FeatureConfig>>(*pnh_);
+  //dynamic_reconfigure::Server<FeatureConfig>::CallbackType f = boost::bind(
+    //&FeatureFromNormals::config_callback, this, _1, _2);
+  //srv_->setCallback(f);
 
   // Create the objects here
   if (approximate_sync_) {
@@ -441,13 +453,14 @@ pcl_ros::FeatureFromNormals::onInit()
         input_normals_surface_indices_callback, this, _1, _2, _3, _4));
   }
 
-  NODELET_DEBUG(
+  RCLCPP_DEBUG(
+    get_logger(),
     "[%s::onInit] Nodelet successfully created with the following parameters:\n"
     " - use_surface    : %s\n"
     " - k_search       : %d\n"
     " - radius_search  : %f\n"
     " - spatial_locator: %d",
-    getName().c_str(),
+    get_name().c_str(),
     (use_surface_) ? "true" : "false", k_, search_radius_, spatial_locator_type_);
 }
 
@@ -464,25 +477,27 @@ pcl_ros::FeatureFromNormals::input_normals_surface_indices_callback(
 
   // If cloud+normals is given, check if it's valid
   if (!isValid(cloud)) {  // || !isValid (cloud_normals, "normals"))
-    NODELET_ERROR("[%s::input_normals_surface_indices_callback] Invalid input!", getName().c_str());
+    RCLCPP_ERROR(get_logger(), "[%s::input_normals_surface_indices_callback] Invalid input!", get_name().c_str());
     emptyPublish(cloud);
     return;
   }
 
   // If surface is given, check if it's valid
   if (cloud_surface && !isValid(cloud_surface, "surface")) {
-    NODELET_ERROR(
+    RCLCPP_ERROR(
+      get_logger(),
       "[%s::input_normals_surface_indices_callback] Invalid input surface!",
-      getName().c_str());
+      get_name().c_str());
     emptyPublish(cloud);
     return;
   }
 
   // If indices are given, check if they are valid
   if (indices && !isValid(indices)) {
-    NODELET_ERROR(
+    RCLCPP_ERROR(
+      get_logger(),
       "[%s::input_normals_surface_indices_callback] Invalid input indices!",
-      getName().c_str());
+      get_name().c_str());
     emptyPublish(cloud);
     return;
   }
@@ -490,7 +505,8 @@ pcl_ros::FeatureFromNormals::input_normals_surface_indices_callback(
   /// DEBUG
   if (cloud_surface) {
     if (indices) {
-      NODELET_DEBUG(
+      RCLCPP_DEBUG(
+        get_logger(),
         "[%s::input_normals_surface_indices_callback]\n"
         "                                                 - PointCloud with %d data points (%s), "
         "stamp %f, and frame %s on topic %s received.\n"
@@ -500,7 +516,7 @@ pcl_ros::FeatureFromNormals::input_normals_surface_indices_callback(
         "stamp %f, and frame %s on topic %s received.\n"
         "                                                 - PointIndices with %zu values, "
         "stamp %f, and frame %s on topic %s received.",
-        getName().c_str(),
+        get_name().c_str(),
         cloud->width * cloud->height, pcl::getFieldsList(*cloud).c_str(),
         cloud->header.stamp.toSec(), cloud->header.frame_id.c_str(), pnh_->resolveName(
           "input").c_str(),
@@ -515,7 +531,8 @@ pcl_ros::FeatureFromNormals::input_normals_surface_indices_callback(
         indices->indices.size(), indices->header.stamp.toSec(),
         indices->header.frame_id.c_str(), pnh_->resolveName("indices").c_str());
     } else {
-      NODELET_DEBUG(
+      RCLCPP_DEBUG(
+        get_logger(),
         "[%s::input_normals_surface_indices_callback]\n"
         "                                         - PointCloud with %d data points (%s), "
         "stamp %f, and frame %s on topic %s received.\n"
@@ -523,7 +540,7 @@ pcl_ros::FeatureFromNormals::input_normals_surface_indices_callback(
         "stamp %f, and frame %s on topic %s received.\n"
         "                                         - PointCloud with %d data points (%s), "
         "stamp %f, and frame %s on topic %s received.",
-        getName().c_str(),
+        get_name().c_str(),
         cloud->width * cloud->height, pcl::getFieldsList(*cloud).c_str(),
         cloud->header.stamp.toSec(), cloud->header.frame_id.c_str(), pnh_->resolveName(
           "input").c_str(),
@@ -537,7 +554,8 @@ pcl_ros::FeatureFromNormals::input_normals_surface_indices_callback(
         cloud_normals->header.frame_id.c_str(), pnh_->resolveName("normals").c_str());
     }
   } else if (indices) {
-    NODELET_DEBUG(
+    RCLCPP_DEBUG(
+      get_logger(),
       "[%s::input_normals_surface_indices_callback]\n"
       "                                         - PointCloud with %d data points (%s), "
       "stamp %f, and frame %s on topic %s received.\n"
@@ -545,7 +563,7 @@ pcl_ros::FeatureFromNormals::input_normals_surface_indices_callback(
       "stamp %f, and frame %s on topic %s received.\n"
       "                                         - PointIndices with %zu values, "
       "stamp %f, and frame %s on topic %s received.",
-      getName().c_str(),
+      get_name().c_str(),
       cloud->width * cloud->height, pcl::getFieldsList(*cloud).c_str(),
       cloud->header.stamp.toSec(), cloud->header.frame_id.c_str(), pnh_->resolveName(
         "input").c_str(),
@@ -556,13 +574,14 @@ pcl_ros::FeatureFromNormals::input_normals_surface_indices_callback(
       indices->indices.size(), indices->header.stamp.toSec(),
       indices->header.frame_id.c_str(), pnh_->resolveName("indices").c_str());
   } else {
-    NODELET_DEBUG(
+    RCLCPP_DEBUG(
+      get_logger(),
       "[%s::input_normals_surface_indices_callback]\n"
       "                                 - PointCloud with %d data points (%s), stamp %f, and "
       "frame %s on topic %s received.\n"
       "                                 - PointCloud with %d data points (%s), stamp %f, and "
       "frame %s on topic %s received.",
-      getName().c_str(),
+      get_name().c_str(),
       cloud->width * cloud->height, pcl::getFieldsList(*cloud).c_str(),
       cloud->header.stamp.toSec(), cloud->header.frame_id.c_str(), pnh_->resolveName(
         "input").c_str(),
@@ -574,10 +593,11 @@ pcl_ros::FeatureFromNormals::input_normals_surface_indices_callback(
   ///
 
   if (static_cast<int>(cloud->width * cloud->height) < k_) {
-    NODELET_ERROR(
+    RCLCPP_ERROR(
+      get_logger(),
       "[%s::input_normals_surface_indices_callback] Requested number of k-nearest neighbors (%d) "
       "is larger than the PointCloud size (%d)!",
-      getName().c_str(), k_, (int)(cloud->width * cloud->height));
+      get_name().c_str(), k_, (int)(cloud->width * cloud->height));
     emptyPublish(cloud);
     return;
   }

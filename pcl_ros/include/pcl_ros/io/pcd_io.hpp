@@ -40,7 +40,7 @@
 
 #include <pcl/io/pcd_io.h>
 #include <string>
-#include "pcl_ros/pcl_nodelet.hpp"
+#include "pcl_ros/pcl_node.hpp"
 
 namespace pcl_ros
 {
@@ -48,7 +48,7 @@ namespace pcl_ros
 /** \brief Point Cloud Data (PCD) file format reader.
   * \author Radu Bogdan Rusu
   */
-class PCDReader : public PCLNodelet
+class PCDReader : public PCLNode
 {
 public:
   typedef sensor_msgs::PointCloud2 PointCloud2;
@@ -116,7 +116,7 @@ public:
   void input_callback(const PointCloud2ConstPtr & cloud);
 
   /** \brief The input PointCloud subscriber. */
-  ros::Subscriber sub_input_;
+  rclcpp::Subscription<PointCloud>::SharedPtr sub_input_;
 
 protected:
   /** \brief The name of the file that contains the PointCloud data. */

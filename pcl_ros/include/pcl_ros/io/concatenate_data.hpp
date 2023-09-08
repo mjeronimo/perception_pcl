@@ -85,7 +85,7 @@ public:
 
 private:
   /** \brief The output PointCloud publisher. */
-  ros::Publisher pub_output_;
+  rclcpp::Publisher<PointCloud> pub_output_;
 
   /** \brief The maximum number of messages that we can store in the queue. */
   int maximum_queue_size_;

@@ -39,12 +39,11 @@
 #define PCL_ROS__SEGMENTATION__SAC_SEGMENTATION_HPP_
 
 #include <message_filters/pass_through.h>
+#include <message_filters/sync_policies/approximate_time.h>
+#include <message_filters/sync_policies/exact_time.h>
 #include <pcl/segmentation/sac_segmentation.h>
-#include <dynamic_reconfigure/server.h>
 #include <string>
-#include "pcl_ros/pcl_nodelet.hpp"
-#include "pcl_ros/SACSegmentationConfig.hpp"
-#include "pcl_ros/SACSegmentationFromNormalsConfig.hpp"
+#include "pcl_ros/pcl_node.hpp"
 
 namespace pcl_ros
 {
@@ -56,16 +55,19 @@ namespace sync_policies = message_filters::sync_policies;
   * SAC-based segmentation.
   * \author Radu Bogdan Rusu
   */
-class SACSegmentation : public PCLNodelet
+class SACSegmentation : public PCLNode<pcl_msgs::msg::PointIndices>
 {
   typedef pcl::PointCloud<pcl::PointXYZ> PointCloud;
   typedef boost::shared_ptr<PointCloud> PointCloudPtr;
   typedef boost::shared_ptr<const PointCloud> PointCloudConstPtr;
 
 public:
-  /** \brief Constructor. */
-  SACSegmentation()
-  : min_inliers_(0) {}
+  /** \brief Disallow the empty constructor. */
+  SACSegmentation() = delete;
+
+  explicit SACSegmentation(std::string node_name, const rclcpp::NodeOptions & options = rclcpp::NodeOptions())
+  : PCLNode(node_name, options), 
+    min_inliers_(0) {}
 
   /** \brief Set the input TF frame the data should be transformed into before processing,
     * if input.header.frame_id is different.
@@ -90,16 +92,14 @@ protected:
 
   // ROS nodelet attributes
   /** \brief The output PointIndices publisher. */
-  ros::Publisher pub_indices_;
+  // TODO: Resove with the publisher in the PCLNode template
+  rclcpp::Publisher<PointIndices>::SharedPtr pub_indices_;
 
   /** \brief The output ModelCoefficients publisher. */
-  ros::Publisher pub_model_;
+  rclcpp::Publisher<ModelCoefficients>::SharedPtr pub_model_;
 
   /** \brief The input PointCloud subscriber. */
-  ros::Subscriber sub_input_;
-
-  /** \brief Pointer to a dynamic reconfigure service. */
-  boost::shared_ptr<dynamic_reconfigure::Server<SACSegmentationConfig>> srv_;
+  rclcpp::Subscription<PointCloud>::SharedPtr sub_input_;
 
   /** \brief The input TF frame the data should be transformed into,
     * if input.header.frame_id is different.
@@ -116,7 +116,7 @@ protected:
 
   /** \brief Null passthrough filter, used for pushing empty elements in the
     * synchronizer */
-  message_filters::PassThrough<pcl_msgs::PointIndices> nf_pi_;
+  message_filters::PassThrough<pcl_msgs::msg::PointIndices> nf_pi_;
 
   /** \brief Nodelet initialization routine. */
   virtual void onInit();
@@ -129,7 +129,7 @@ protected:
     * \param config the config object
     * \param level the dynamic reconfigure level
     */
-  void config_callback(SACSegmentationConfig & config, uint32_t level);
+  // void config_callback(SACSegmentationConfig & config, uint32_t level);
 
   /** \brief Input point cloud callback. Used when \a use_indices is set.
     * \param cloud the pointer to the input point cloud
@@ -220,10 +220,10 @@ protected:
   message_filters::Subscriber<PointCloudN> sub_normals_filter_;
 
   /** \brief The input PointCloud subscriber. */
-  ros::Subscriber sub_axis_;
+  rclcpp::Subscription<PointCloud>::SharedPtr sub_axis_;
 
   /** \brief Pointer to a dynamic reconfigure service. */
-  boost::shared_ptr<dynamic_reconfigure::Server<SACSegmentationFromNormalsConfig>> srv_;
+  //boost::shared_ptr<dynamic_reconfigure::Server<SACSegmentationFromNormalsConfig>> srv_;
 
   /** \brief Input point cloud callback.
     * Because we want to use the same synchronizer object, we push back

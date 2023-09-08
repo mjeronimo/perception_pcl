@@ -38,11 +38,13 @@
 #ifndef PCL_ROS__SEGMENTATION__EXTRACT_CLUSTERS_HPP_
 #define PCL_ROS__SEGMENTATION__EXTRACT_CLUSTERS_HPP_
 
-#include <dynamic_reconfigure/server.h>
-#include <pcl/segmentation/extract_clusters.h>
 #include <limits>
-#include "pcl_ros/pcl_nodelet.hpp"
-#include "pcl_ros/EuclideanClusterExtractionConfig.hpp"
+#include <string>
+
+#include <message_filters/sync_policies/approximate_time.h>
+#include <message_filters/sync_policies/exact_time.h>
+#include <pcl_ros/pcl_node.hpp>
+#include <pcl/segmentation/extract_clusters.h>
 
 namespace pcl_ros
 {
@@ -53,23 +55,25 @@ namespace sync_policies = message_filters::sync_policies;
 /** \brief @b EuclideanClusterExtraction represents a segmentation class for cluster extraction in an Euclidean sense.
   * \author Radu Bogdan Rusu
   */
-class EuclideanClusterExtraction : public PCLNodelet
+class EuclideanClusterExtraction : public PCLNode<sensor_msgs::msg::PointCloud2>
 {
 public:
-  /** \brief Empty constructor. */
-  EuclideanClusterExtraction()
-  : publish_indices_(false), max_clusters_(std::numeric_limits<int>::max()) {}
+  /** \brief Disallow the empty constructor. */
+  EuclideanClusterExtraction() = delete;
+
+  explicit EuclideanClusterExtraction(const rclcpp::NodeOptions & options = rclcpp::NodeOptions())
+  : PCLNode("EuclideanClusterExtractionNode", options), 
+    publish_indices_(false), 
+    max_clusters_(std::numeric_limits<int>::max()) {}
 
 protected:
-  // ROS nodelet attributes
   /** \brief Publish indices or convert to PointCloud clusters. Default: false */
   bool publish_indices_;
 
+  rclcpp::Publisher<PointIndices>::SharedPtr pub_indices;
+
   /** \brief Maximum number of clusters to publish. */
   int max_clusters_;
-
-  /** \brief Pointer to a dynamic reconfigure service. */
-  boost::shared_ptr<dynamic_reconfigure::Server<EuclideanClusterExtractionConfig>> srv_;
 
   /** \brief Nodelet initialization routine. */
   void onInit();
@@ -78,18 +82,12 @@ protected:
   void subscribe();
   void unsubscribe();
 
-  /** \brief Dynamic reconfigure callback
-    * \param config the config object
-    * \param level the dynamic reconfigure level
-    */
-  void config_callback(EuclideanClusterExtractionConfig & config, uint32_t level);
-
   /** \brief Input point cloud callback.
     * \param cloud the pointer to the input point cloud
     * \param indices the pointer to the input point cloud indices
     */
   void input_indices_callback(
-    const PointCloudConstPtr & cloud,
+    const PointCloud2::ConstSharedPtr & cloud,
     const PointIndicesConstPtr & indices);
 
 private:
@@ -97,12 +95,12 @@ private:
   pcl::EuclideanClusterExtraction<pcl::PointXYZ> impl_;
 
   /** \brief The input PointCloud subscriber. */
-  ros::Subscriber sub_input_;
+  rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr sub_input_;
 
   /** \brief Synchronized input, and indices.*/
-  boost::shared_ptr<message_filters::Synchronizer<sync_policies::ExactTime<PointCloud,
+  boost::shared_ptr<message_filters::Synchronizer<sync_policies::ExactTime<sensor_msgs::msg::PointCloud2,
     PointIndices>>> sync_input_indices_e_;
-  boost::shared_ptr<message_filters::Synchronizer<sync_policies::ApproximateTime<PointCloud,
+  boost::shared_ptr<message_filters::Synchronizer<sync_policies::ApproximateTime<sensor_msgs::msg::PointCloud2,
     PointIndices>>> sync_input_indices_a_;
 
 public:

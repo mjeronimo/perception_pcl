@@ -39,10 +39,10 @@
 #define PCL_ROS__SEGMENTATION__SEGMENT_DIFFERENCES_HPP_
 
 #include <pcl/segmentation/segment_differences.h>
-#include <dynamic_reconfigure/server.h>
-#include "pcl_ros/SegmentDifferencesConfig.hpp"
-#include "pcl_ros/pcl_nodelet.hpp"
-
+#include "message_filters/sync_policies/approximate_time.h"
+#include "message_filters/sync_policies/exact_time.h"
+#include "message_filters/subscriber.h"
+#include "pcl_ros/pcl_node.hpp"
 
 namespace pcl_ros
 {
@@ -55,7 +55,7 @@ namespace sync_policies = message_filters::sync_policies;
   * difference between them for a maximum given distance threshold.
   * \author Radu Bogdan Rusu
   */
-class SegmentDifferences : public PCLNodelet
+class SegmentDifferences : public PCLNode<sensor_msgs::msg::PointCloud2>
 {
   typedef pcl::PointCloud<pcl::PointXYZ> PointCloud;
   typedef boost::shared_ptr<PointCloud> PointCloudPtr;
@@ -67,16 +67,13 @@ public:
 
 protected:
   /** \brief The message filter subscriber for PointCloud2. */
-  message_filters::Subscriber<PointCloud> sub_target_filter_;
+  message_filters::Subscriber<sensor_msgs::msg::PointCloud2> sub_target_filter_;
 
   /** \brief Synchronized input, and planar hull.*/
-  boost::shared_ptr<message_filters::Synchronizer<sync_policies::ExactTime<PointCloud,
-    PointCloud>>> sync_input_target_e_;
-  boost::shared_ptr<message_filters::Synchronizer<sync_policies::ApproximateTime<PointCloud,
-    PointCloud>>> sync_input_target_a_;
-
-  /** \brief Pointer to a dynamic reconfigure service. */
-  boost::shared_ptr<dynamic_reconfigure::Server<SegmentDifferencesConfig>> srv_;
+  boost::shared_ptr<message_filters::Synchronizer<sync_policies::ExactTime<sensor_msgs::msg::PointCloud2,
+    sensor_msgs::msg::PointCloud2>>> sync_input_target_e_;
+  boost::shared_ptr<message_filters::Synchronizer<sync_policies::ApproximateTime<sensor_msgs::msg::PointCloud2,
+    sensor_msgs::msg::PointCloud2>>> sync_input_target_a_;
 
   /** \brief Nodelet initialization routine. */
   void onInit();
@@ -84,12 +81,6 @@ protected:
   /** \brief LazyNodelet connection routine. */
   void subscribe();
   void unsubscribe();
-
-  /** \brief Dynamic reconfigure callback
-    * \param config the config object
-    * \param level the dynamic reconfigure level
-    */
-  void config_callback(SegmentDifferencesConfig & config, uint32_t level);
 
   /** \brief Input point cloud callback.
     * \param cloud the pointer to the input point cloud

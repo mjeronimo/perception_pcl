@@ -44,7 +44,7 @@
 void
 pcl_ros::MovingLeastSquares::onInit()
 {
-  PCLNodelet::onInit();
+  //PCLNodelet::onInit();
 
   // ros::NodeHandle private_nh = getMTPrivateNodeHandle ();
   pub_output_ = advertise<PointCloudIn>(*pnh_, "output", max_queue_size_);
@@ -52,30 +52,30 @@ pcl_ros::MovingLeastSquares::onInit()
 
   // if (!pnh_->getParam ("k_search", k_) && !pnh_->getParam ("search_radius", search_radius_))
   if (!pnh_->getParam("search_radius", search_radius_)) {
-    // NODELET_ERROR ("[%s::onInit] Neither 'k_search' nor 'search_radius' set! Need to set "
+    // RCLCPP_ERROR ("[%s::onInit] Neither 'k_search' nor 'search_radius' set! Need to set "
     // "at least one of these parameters before continuing.", getName ().c_str ());
-    NODELET_ERROR(
+    RCLCPP_ERROR(
       "[%s::onInit] Need a 'search_radius' parameter to be set before continuing!",
       getName().c_str());
     return;
   }
   if (!pnh_->getParam("spatial_locator", spatial_locator_type_)) {
-    NODELET_ERROR(
+    RCLCPP_ERROR(
       "[%s::onInit] Need a 'spatial_locator' parameter to be set before continuing!",
       getName().c_str());
     return;
   }
 
   // Enable the dynamic reconfigure service
-  srv_ = boost::make_shared<dynamic_reconfigure::Server<MLSConfig>>(*pnh_);
-  dynamic_reconfigure::Server<MLSConfig>::CallbackType f = boost::bind(
-    &MovingLeastSquares::config_callback, this, _1, _2);
-  srv_->setCallback(f);
+  //srv_ = boost::make_shared<dynamic_reconfigure::Server<MLSConfig>>(*pnh_);
+  //dynamic_reconfigure::Server<MLSConfig>::CallbackType f = boost::bind(
+    //&MovingLeastSquares::config_callback, this, _1, _2);
+  //srv_->setCallback(f);
 
   // ---[ Optional parameters
   pnh_->getParam("use_indices", use_indices_);
 
-  NODELET_DEBUG(
+  RCLCPP_DEBUG(
     "[%s::onInit] Nodelet successfully created with the following parameters:\n"
     " - use_indices    : %s",
     getName().c_str(),
@@ -158,14 +158,14 @@ pcl_ros::MovingLeastSquares::input_indices_callback(
 
   // If cloud is given, check if it's valid
   if (!isValid(cloud)) {
-    NODELET_ERROR("[%s::input_indices_callback] Invalid input!", getName().c_str());
+    RCLCPP_ERROR("[%s::input_indices_callback] Invalid input!", getName().c_str());
     output.header = cloud->header;
     pub_output_.publish(ros_ptr(output.makeShared()));
     return;
   }
   // If indices are given, check if they are valid
   if (indices && !isValid(indices, "indices")) {
-    NODELET_ERROR("[%s::input_indices_callback] Invalid indices!", getName().c_str());
+    RCLCPP_ERROR("[%s::input_indices_callback] Invalid indices!", getName().c_str());
     output.header = cloud->header;
     pub_output_.publish(ros_ptr(output.makeShared()));
     return;
@@ -173,7 +173,7 @@ pcl_ros::MovingLeastSquares::input_indices_callback(
 
   /// DEBUG
   if (indices) {
-    NODELET_DEBUG(
+    RCLCPP_DEBUG(
       "[%s::input_indices_model_callback]\n"
       "                                 - PointCloud with %d data points (%s), stamp %f, and "
       "frame %s on topic %s received.\n"
@@ -186,7 +186,7 @@ pcl_ros::MovingLeastSquares::input_indices_callback(
       indices->indices.size(), indices->header.stamp.toSec(),
       indices->header.frame_id.c_str(), getMTPrivateNodeHandle().resolveName("indices").c_str());
   } else {
-    NODELET_DEBUG(
+    RCLCPP_DEBUG(
       "[%s::input_callback] PointCloud with %d data points, stamp %f, and frame %s on "
       "topic %s received.",
       getName().c_str(), cloud->width * cloud->height, fromPCL(
@@ -226,29 +226,29 @@ pcl_ros::MovingLeastSquares::config_callback(MLSConfig & config, uint32_t level)
   /*if (k_ != config.k_search)
   {
     k_ = config.k_search;
-    NODELET_DEBUG ("[config_callback] Setting the k_search to: %d.", k_);
+    RCLCPP_DEBUG ("[config_callback] Setting the k_search to: %d.", k_);
   }*/
   if (search_radius_ != config.search_radius) {
     search_radius_ = config.search_radius;
-    NODELET_DEBUG("[config_callback] Setting the search radius: %f.", search_radius_);
+    RCLCPP_DEBUG("[config_callback] Setting the search radius: %f.", search_radius_);
     impl_.setSearchRadius(search_radius_);
   }
   if (spatial_locator_type_ != config.spatial_locator) {
     spatial_locator_type_ = config.spatial_locator;
-    NODELET_DEBUG(
+    RCLCPP_DEBUG(
       "[config_callback] Setting the spatial locator to type: %d.",
       spatial_locator_type_);
   }
   if (use_polynomial_fit_ != config.use_polynomial_fit) {
     use_polynomial_fit_ = config.use_polynomial_fit;
-    NODELET_DEBUG(
+    RCLCPP_DEBUG(
       "[config_callback] Setting the use_polynomial_fit flag to: %d.",
       use_polynomial_fit_);
 #if PCL_VERSION_COMPARE(<, 1, 9, 0)
     impl_.setPolynomialFit(use_polynomial_fit_);
 #else
     if (use_polynomial_fit_) {
-      NODELET_WARN(
+      RCLCPP_WARN(
         "[config_callback] use_polynomial_fit is deprecated, use polynomial_order instead!");
       if (impl_.getPolynomialOrder() < 2) {
         impl_.setPolynomialOrder(2);
@@ -260,12 +260,12 @@ pcl_ros::MovingLeastSquares::config_callback(MLSConfig & config, uint32_t level)
   }
   if (polynomial_order_ != config.polynomial_order) {
     polynomial_order_ = config.polynomial_order;
-    NODELET_DEBUG("[config_callback] Setting the polynomial order to: %d.", polynomial_order_);
+    RCLCPP_DEBUG("[config_callback] Setting the polynomial order to: %d.", polynomial_order_);
     impl_.setPolynomialOrder(polynomial_order_);
   }
   if (gaussian_parameter_ != config.gaussian_parameter) {
     gaussian_parameter_ = config.gaussian_parameter;
-    NODELET_DEBUG("[config_callback] Setting the gaussian parameter to: %f.", gaussian_parameter_);
+    RCLCPP_DEBUG("[config_callback] Setting the gaussian parameter to: %f.", gaussian_parameter_);
     impl_.setSqrGaussParam(gaussian_parameter_ * gaussian_parameter_);
   }
 }

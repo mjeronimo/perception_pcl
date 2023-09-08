@@ -43,14 +43,14 @@
 void
 pcl_ros::PCDReader::onInit()
 {
-  PCLNodelet::onInit();
+  //PCLNodelet::onInit();
   // Provide a latched topic
   ros::Publisher pub_output = pnh_->advertise<PointCloud2>("output", max_queue_size_, true);
 
   pnh_->getParam("publish_rate", publish_rate_);
   pnh_->getParam("tf_frame", tf_frame_);
 
-  NODELET_DEBUG(
+  RCLCPP_DEBUG(
     "[%s::onInit] Nodelet successfully created with the following parameters:\n"
     " - publish_rate : %f\n"
     " - tf_frame     : %s",
@@ -83,11 +83,11 @@ pcl_ros::PCDReader::onInit()
 
     // If the filename parameter holds a different value than the last one we read
     if (file_name_.compare(file_name) != 0 && !file_name_.empty()) {
-      NODELET_INFO("[%s::onInit] New file given: %s", getName().c_str(), file_name_.c_str());
+      RCLCPP_INFO("[%s::onInit] New file given: %s", getName().c_str(), file_name_.c_str());
       file_name = file_name_;
       pcl::PCLPointCloud2 cloud;
       if (impl_.read(file_name_, cloud) < 0) {
-        NODELET_ERROR("[%s::onInit] Error reading %s !", getName().c_str(), file_name_.c_str());
+        RCLCPP_ERROR("[%s::onInit] Error reading %s !", getName().c_str(), file_name_.c_str());
         return;
       }
       pcl_conversions::moveFromPCL(cloud, *(output_));
@@ -102,7 +102,7 @@ pcl_ros::PCDReader::onInit()
 
     if (publish_rate_ == 0) {
       if (output_ != output_new) {
-        NODELET_DEBUG(
+        RCLCPP_DEBUG(
           "Publishing data once (%d points) on topic %s in frame %s.",
           output_->width * output_->height,
           getMTPrivateNodeHandle().resolveName("output").c_str(), output_->header.frame_id.c_str());
@@ -111,7 +111,7 @@ pcl_ros::PCDReader::onInit()
       }
       ros::Duration(0.01).sleep();
     } else {
-      NODELET_DEBUG(
+      RCLCPP_DEBUG(
         "Publishing data (%d points) on topic %s in frame %s.",
         output_->width * output_->height, getMTPrivateNodeHandle().resolveName(
           "output").c_str(), output_->header.frame_id.c_str());
@@ -143,7 +143,7 @@ pcl_ros::PCDWriter::onInit()
   pnh_->getParam("filename", file_name_);
   pnh_->getParam("binary_mode", binary_mode_);
 
-  NODELET_DEBUG(
+  RCLCPP_DEBUG(
     "[%s::onInit] Nodelet successfully created with the following parameters:\n"
     " - filename     : %s\n"
     " - binary_mode  : %s",
@@ -163,7 +163,7 @@ pcl_ros::PCDWriter::input_callback(const PointCloud2ConstPtr & cloud)
 
   pnh_->getParam("filename", file_name_);
 
-  NODELET_DEBUG(
+  RCLCPP_DEBUG(
     "[%s::input_callback] PointCloud with %d data points and frame %s on topic %s received.",
     getName().c_str(), cloud->width * cloud->height,
     cloud->header.frame_id.c_str(), getMTPrivateNodeHandle().resolveName("input").c_str());
@@ -181,7 +181,7 @@ pcl_ros::PCDWriter::input_callback(const PointCloud2ConstPtr & cloud)
     fname, pcl_cloud, Eigen::Vector4f::Zero(),
     Eigen::Quaternionf::Identity(), binary_mode_);
 
-  NODELET_DEBUG("[%s::input_callback] Data saved to %s", getName().c_str(), fname.c_str());
+  RCLCPP_DEBUG("[%s::input_callback] Data saved to %s", getName().c_str(), fname.c_str());
 }
 
 typedef pcl_ros::PCDReader PCDReader;

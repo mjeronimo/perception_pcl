@@ -54,24 +54,24 @@ pcl_ros::PointCloudConcatenateDataSynchronizer::onInit()
   pnh_->getParam("approximate_sync", approximate_sync_);
 
   if (output_frame_.empty()) {
-    NODELET_ERROR("[onInit] Need an 'output_frame' parameter to be set before continuing!");
+    RCLCPP_ERROR("[onInit] Need an 'output_frame' parameter to be set before continuing!");
     return;
   }
 
   if (!pnh_->getParam("input_topics", input_topics_)) {
-    NODELET_ERROR("[onInit] Need a 'input_topics' parameter to be set before continuing!");
+    RCLCPP_ERROR("[onInit] Need a 'input_topics' parameter to be set before continuing!");
     return;
   }
   if (input_topics_.getType() != XmlRpc::XmlRpcValue::TypeArray) {
-    NODELET_ERROR("[onInit] Invalid 'input_topics' parameter given!");
+    RCLCPP_ERROR("[onInit] Invalid 'input_topics' parameter given!");
     return;
   }
   if (input_topics_.size() == 1) {
-    NODELET_ERROR("[onInit] Only one topic given. Need at least two topics to continue.");
+    RCLCPP_ERROR("[onInit] Only one topic given. Need at least two topics to continue.");
     return;
   }
   if (input_topics_.size() > 8) {
-    NODELET_ERROR("[onInit] More than 8 topics passed!");
+    RCLCPP_ERROR("[onInit] More than 8 topics passed!");
     return;
   }
 
@@ -211,7 +211,7 @@ pcl_ros::PointCloudConcatenateDataSynchronizer::subscribe()
       }
     default:
       {
-        NODELET_FATAL("Invalid 'input_topics' parameter given!");
+        RCLCPP_FATAL("Invalid 'input_topics' parameter given!");
         return;
       }
   }

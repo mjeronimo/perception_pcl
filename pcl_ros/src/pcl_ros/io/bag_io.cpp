@@ -66,11 +66,11 @@ pcl_ros::BAGReader::onInit()
   pnh_.reset(new ros::NodeHandle(getMTPrivateNodeHandle()));
   // ---[ Mandatory parameters
   if (!pnh_->getParam("file_name", file_name_)) {
-    NODELET_ERROR("[onInit] Need a 'file_name' parameter to be set before continuing!");
+    RCLCPP_ERROR("[onInit] Need a 'file_name' parameter to be set before continuing!");
     return;
   }
   if (!pnh_->getParam("topic_name", topic_name_)) {
-    NODELET_ERROR("[onInit] Need a 'topic_name' parameter to be set before continuing!");
+    RCLCPP_ERROR("[onInit] Need a 'topic_name' parameter to be set before continuing!");
     return;
   }
   // ---[ Optional parameters
@@ -80,7 +80,7 @@ pcl_ros::BAGReader::onInit()
 
   ros::Publisher pub_output = pnh_->advertise<sensor_msgs::PointCloud2>("output", max_queue_size);
 
-  NODELET_DEBUG(
+  RCLCPP_DEBUG(
     "[onInit] Nodelet successfully created with the following parameters:\n"
     " - file_name    : %s\n"
     " - topic_name   : %s",
@@ -96,7 +96,7 @@ pcl_ros::BAGReader::onInit()
   // Continous publishing enabled?
   while (pnh_->ok()) {
     PointCloudConstPtr cloud = getNextCloud();
-    NODELET_DEBUG(
+    RCLCPP_DEBUG(
       "Publishing data (%d points) on topic %s in frame %s.",
       output_->width * output_->height, pnh_->resolveName(
         "output").c_str(), output_->header.frame_id.c_str());

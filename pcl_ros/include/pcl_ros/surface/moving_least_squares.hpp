@@ -39,8 +39,8 @@
 #define PCL_ROS__SURFACE__MOVING_LEAST_SQUARES_HPP_
 
 #include <pcl/surface/mls.h>
-#include <dynamic_reconfigure/server.h>
-#include "pcl_ros/pcl_nodelet.hpp"
+//#include <dynamic_reconfigure/server.h>
+#include "pcl_ros/pcl_node.hpp"
 #include "pcl_ros/MLSConfig.hpp"
 
 namespace pcl_ros
@@ -53,7 +53,7 @@ namespace sync_policies = message_filters::sync_policies;
   * Normals are estimated at each point as well and published on a separate topic.
   * \author Radu Bogdan Rusu, Zoltan-Csaba Marton
   */
-class MovingLeastSquares : public PCLNodelet
+class MovingLeastSquares : public PCLNode
 {
   typedef pcl::PointXYZ PointIn;
   typedef pcl::PointNormal NormalOut;
@@ -104,7 +104,7 @@ protected:
   int spatial_locator_type_;
 
   /** \brief Pointer to a dynamic reconfigure service. */
-  boost::shared_ptr<dynamic_reconfigure::Server<MLSConfig>> srv_;
+  //boost::shared_ptr<dynamic_reconfigure::Server<MLSConfig>> srv_;
 
   /** \brief Dynamic reconfigure callback
     * \param config the config object
@@ -133,10 +133,10 @@ private:
   pcl::MovingLeastSquares<PointIn, NormalOut> impl_;
 
   /** \brief The input PointCloud subscriber. */
-  ros::Subscriber sub_input_;
+  rclcpp::Subscription<PointCloud> sub_input_;
 
   /** \brief The output PointCloud (containing the normals) publisher. */
-  ros::Publisher pub_normals_;
+  rclcpp::Publisher<PointCloud> pub_normals_;
 
   /** \brief Synchronized input, and indices.*/
   boost::shared_ptr<message_filters::Synchronizer<sync_policies::ExactTime<PointCloudIn,

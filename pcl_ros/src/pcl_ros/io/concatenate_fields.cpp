@@ -52,11 +52,11 @@ pcl_ros::PointCloudConcatenateFieldsSynchronizer::onInit()
 
   // ---[ Mandatory parameters
   if (!pnh_->getParam("input_messages", input_messages_)) {
-    NODELET_ERROR("[onInit] Need a 'input_messages' parameter to be set before continuing!");
+    RCLCPP_ERROR("[onInit] Need a 'input_messages' parameter to be set before continuing!");
     return;
   }
   if (input_messages_ < 2) {
-    NODELET_ERROR("[onInit] Invalid 'input_messages' parameter given!");
+    RCLCPP_ERROR("[onInit] Invalid 'input_messages' parameter given!");
     return;
   }
   // ---[ Optional parameters
@@ -87,7 +87,7 @@ pcl_ros::PointCloudConcatenateFieldsSynchronizer::unsubscribe()
 void
 pcl_ros::PointCloudConcatenateFieldsSynchronizer::input_callback(const PointCloudConstPtr & cloud)
 {
-  NODELET_DEBUG(
+  RCLCPP_DEBUG(
     "[input_callback] PointCloud with %d data points (%s), stamp %f, and frame %s on "
     "topic %s received.",
     cloud->width * cloud->height, pcl::getFieldsList(*cloud).c_str(),
@@ -99,7 +99,7 @@ pcl_ros::PointCloudConcatenateFieldsSynchronizer::input_callback(const PointClou
     while (fabs( ( (*queue_.begin()).first - cloud->header.stamp).toSec() ) > maximum_seconds_ &&
       queue_.size() > 0)
     {
-      NODELET_WARN(
+      RCLCPP_WARN(
         "[input_callback] Maximum seconds limit (%f) reached. Difference is %f, erasing message "
         "in queue with stamp %f.", maximum_seconds_,
         (*queue_.begin()).first.toSec(),
@@ -124,7 +124,7 @@ pcl_ros::PointCloudConcatenateFieldsSynchronizer::input_callback(const PointClou
         clouds[i]->data.size() / (clouds[i]->width * clouds[i]->height) == clouds[i]->point_step);
 
       if (clouds[i]->width != cloud_out.width || clouds[i]->height != cloud_out.height) {
-        NODELET_ERROR(
+        RCLCPP_ERROR(
           "[input_callback] Width/height of pointcloud %zu (%dx%d) differs "
           "from the others (%dx%d)!",
           i, clouds[i]->width, clouds[i]->height, cloud_out.width, cloud_out.height);
