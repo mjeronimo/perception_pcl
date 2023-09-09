@@ -41,6 +41,7 @@
 #include <pcl_conversions/pcl_conversions.h>
 #include <pcl_ros/segmentation/extract_polygonal_prism_data.hpp>
 #include <pcl_ros/transforms.hpp>
+#include <sensor_msgs/point_cloud_conversion.hpp>
 
 using pcl_conversions::moveFromPCL;
 using pcl_conversions::moveToPCL;
@@ -216,12 +217,16 @@ pcl_ros::ExtractPolygonalPrismData::input_hull_indices_callback(
       pub_output_->publish(inliers);
       return;
     }
-    PointCloud::Ptr pcl_hull;
-    // TODO(mjeronimo): Convert from planar_hull to pcl_hull
+
+    // Convert from planar_hull to pcl_hull
+    boost::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> pcl_hull = boost::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
+    pcl::fromROSMsg(planar_hull, *pcl_hull);
     impl_.setInputPlanarHull(pcl_hull);
+
   } else {
-    PointCloud::Ptr pcl_hull;
-    // TODO(mjeronimo): Convert from hull to pcl_hull
+    // Convert from hull to pcl_hull
+    boost::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> pcl_hull = boost::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
+    pcl::fromROSMsg(*hull, *pcl_hull);
     impl_.setInputPlanarHull(pcl_hull);
   }
 
@@ -230,8 +235,10 @@ pcl_ros::ExtractPolygonalPrismData::input_hull_indices_callback(
     indices_ptr.reset(new std::vector<int>(indices->indices));
   }
 
-  // TODO(mjeronimo): Convert from cloud to pcl_cloud
-  PointCloud::Ptr pcl_cloud;
+  // Convert from cloud to pcl_cloud
+  boost::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> pcl_cloud = boost::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
+  pcl::fromROSMsg(*cloud, *pcl_cloud);
+
   impl_.setInputCloud(pcl_cloud);
   impl_.setIndices(indices_ptr);
 
