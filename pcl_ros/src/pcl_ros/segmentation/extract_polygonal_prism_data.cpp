@@ -35,13 +35,13 @@
  *
  */
 
+#include "pcl_ros/segmentation/extract_polygonal_prism_data.hpp"
+
 #include <vector>
 
-#include <pcl/common/io.h>
-#include <pcl_conversions/pcl_conversions.h>
-#include <pcl_ros/segmentation/extract_polygonal_prism_data.hpp>
-#include <pcl_ros/transforms.hpp>
-#include <sensor_msgs/point_cloud_conversion.hpp>
+#include "pcl/common/io.h"
+#include "pcl_conversions/pcl_conversions.h"
+#include "pcl_ros/transforms.hpp"
 
 using pcl_conversions::moveFromPCL;
 using pcl_conversions::moveToPCL;
@@ -145,6 +145,7 @@ pcl_ros::ExtractPolygonalPrismData::config_callback(const std::vector<rclcpp::Pa
     }
   }
 
+
   rcl_interfaces::msg::SetParametersResult result;
   result.successful = true;
   return result;
@@ -195,10 +196,10 @@ pcl_ros::ExtractPolygonalPrismData::input_hull_indices_callback(
       indices->header.frame_id.c_str(), "indices");
   } else {
     RCLCPP_DEBUG(
-      get_logger(), 
+      get_logger(),
       "[input_indices_hull_callback]\n"
-      "PointCloud with %d data points and frame %s on topic %s received.",
-      "PointCloud with %d data points and frame %s on topic %s received.",
+      "  - PointCloud with %d data points and frame %s on topic %s received.\n"
+      "  - PointCloud with %d data points and frame %s on topic %s received.",
       cloud->width * cloud->height, cloud->header.frame_id.c_str(), "input",
       hull->width * hull->height, hull->header.frame_id.c_str(), "planar_hull");
   }

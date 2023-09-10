@@ -38,41 +38,39 @@
 #ifndef PCL_ROS__SEGMENTATION__SEGMENT_DIFFERENCES_HPP_
 #define PCL_ROS__SEGMENTATION__SEGMENT_DIFFERENCES_HPP_
 
+#include <message_filters/subscriber.h>
+#include <message_filters/sync_policies/approximate_time.h>
+#include <message_filters/sync_policies/exact_time.h>
+#include <pcl_ros/pcl_node.hpp>
 #include <pcl/segmentation/segment_differences.h>
-#include "message_filters/sync_policies/approximate_time.h"
-#include "message_filters/sync_policies/exact_time.h"
-#include "message_filters/subscriber.h"
-#include "pcl_ros/pcl_node.hpp"
 
 namespace pcl_ros
 {
 namespace sync_policies = message_filters::sync_policies;
 
-////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////
 /** \brief @b SegmentDifferences obtains the difference between two spatially aligned point clouds and returns the
   * difference between them for a maximum given distance threshold.
   * \author Radu Bogdan Rusu
   */
 class SegmentDifferences : public PCLNode<sensor_msgs::msg::PointCloud2>
 {
-  typedef pcl::PointCloud<pcl::PointXYZ> PointCloud;
-  typedef boost::shared_ptr<PointCloud> PointCloudPtr;
-  typedef boost::shared_ptr<const PointCloud> PointCloudConstPtr;
-
 public:
-  /** \brief Empty constructor. */
-  SegmentDifferences() {}
+  /** \brief Disallow the empty constructor. */
+  SegmentDifferences() = delete;
+
+  /** \brief ExtractPolygonalPrismDAta constructor
+    * \param options node options
+    */
+  explicit SegmentDifferences(const rclcpp::NodeOptions & options = rclcpp::NodeOptions());
 
 protected:
   /** \brief The message filter subscriber for PointCloud2. */
   message_filters::Subscriber<sensor_msgs::msg::PointCloud2> sub_target_filter_;
 
   /** \brief Synchronized input, and planar hull.*/
-  boost::shared_ptr<message_filters::Synchronizer<sync_policies::ExactTime<sensor_msgs::msg::PointCloud2,
+  std::shared_ptr<message_filters::Synchronizer<sync_policies::ExactTime<sensor_msgs::msg::PointCloud2,
     sensor_msgs::msg::PointCloud2>>> sync_input_target_e_;
-  boost::shared_ptr<message_filters::Synchronizer<sync_policies::ApproximateTime<sensor_msgs::msg::PointCloud2,
+  std::shared_ptr<message_filters::Synchronizer<sync_policies::ApproximateTime<sensor_msgs::msg::PointCloud2,
     sensor_msgs::msg::PointCloud2>>> sync_input_target_a_;
 
   /** \brief Nodelet initialization routine. */
@@ -87,8 +85,8 @@ protected:
     * \param cloud_target the pointcloud that we want to segment \a cloud from
     */
   void input_target_callback(
-    const PointCloudConstPtr & cloud,
-    const PointCloudConstPtr & cloud_target);
+    const PointCloud2::ConstSharedPtr & cloud,
+    const PointCloud2::ConstSharedPtr & cloud_target);
 
 private:
   /** \brief The PCL implementation used. */

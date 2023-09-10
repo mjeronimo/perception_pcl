@@ -36,22 +36,25 @@
  */
 
 #include <pcl/common/io.h>
-#include "pcl_ros/segmentation/segment_differences.hpp"
+#include <pcl_ros/segmentation/segment_differences.hpp>
+
+//////////////////////////////////////////////////////////////////////////////////////////////
+pcl_ros::SegmentDifferences::SegmentDifferences(const rclcpp::NodeOptions & options)
+: PCLNode("SegmentDifferencesNode", options)
+{
+}
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 void
 pcl_ros::SegmentDifferences::onInit()
 {
-  pub_output_ = advertise<PointCloud>(*pnh_, "output", max_queue_size_);
+  pub_output_ = create_publisher<sensor_msgs::msg::PointCloud2>("output", max_queue_size_);
 
   RCLCPP_DEBUG(
     get_logger(),
-    "[%s::onInit] Nodelet successfully created with the following parameters:\n"
-    " - max_queue_size    : %d",
-    get_name().c_str(),
+    "[onInit] Nodelet successfully created with the following parameters:\n"
+    " - max_queue_size: %d",
     max_queue_size_);
-
-  onInitPostProcess();
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -59,33 +62,25 @@ void
 pcl_ros::SegmentDifferences::subscribe()
 {
   // Subscribe to the input using a filter
-  sub_input_filter_.subscribe(*pnh_, "input", max_queue_size_);
-  sub_target_filter_.subscribe(*pnh_, "target", max_queue_size_);
-
-  // Enable the dynamic reconfigure service
-  //srv_ = boost::make_shared<dynamic_reconfigure::Server<SegmentDifferencesConfig>>(*pnh_);
-  //dynamic_reconfigure::Server<SegmentDifferencesConfig>::CallbackType f = boost::bind(
-    //&SegmentDifferences::config_callback, this, _1, _2);
-  //srv_->setCallback(f);
+  rmw_qos_profile_t custom_qos_profile = rmw_qos_profile_sensor_data;
+  custom_qos_profile.depth = max_queue_size_;
+  sub_input_filter_.subscribe(this, "input", custom_qos_profile);
+  sub_target_filter_.subscribe(this, "target", custom_qos_profile);
 
   if (approximate_sync_) {
     sync_input_target_a_ =
-      boost::make_shared<message_filters::Synchronizer<
-          sync_policies::ApproximateTime<PointCloud, PointCloud>>>(max_queue_size_);
+      std::make_shared<message_filters::Synchronizer<
+          sync_policies::ApproximateTime<sensor_msgs::msg::PointCloud2, sensor_msgs::msg::PointCloud2>>>(max_queue_size_);
     sync_input_target_a_->connectInput(sub_input_filter_, sub_target_filter_);
     sync_input_target_a_->registerCallback(
-      bind(
-        &SegmentDifferences::input_target_callback, this,
-        _1, _2));
+      bind(&SegmentDifferences::input_target_callback, this, std::placeholders::_1, std::placeholders::_2));
   } else {
     sync_input_target_e_ =
-      boost::make_shared<message_filters::Synchronizer<
-          sync_policies::ExactTime<PointCloud, PointCloud>>>(max_queue_size_);
+      std::make_shared<message_filters::Synchronizer<
+          sync_policies::ExactTime<sensor_msgs::msg::PointCloud2, sensor_msgs::msg::PointCloud2>>>(max_queue_size_);
     sync_input_target_e_->connectInput(sub_input_filter_, sub_target_filter_);
     sync_input_target_e_->registerCallback(
-      bind(
-        &SegmentDifferences::input_target_callback, this,
-        _1, _2));
+      bind(&SegmentDifferences::input_target_callback, this, std::placeholders::_1, std::placeholders::_2));
   }
 }
 
@@ -98,6 +93,7 @@ pcl_ros::SegmentDifferences::unsubscribe()
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
+#if 0
 void
 pcl_ros::SegmentDifferences::config_callback(SegmentDifferencesConfig & config, uint32_t level)
 {
@@ -105,58 +101,63 @@ pcl_ros::SegmentDifferences::config_callback(SegmentDifferencesConfig & config, 
     impl_.setDistanceThreshold(config.distance_threshold);
     RCLCPP_DEBUG(
       get_logger(),
-      "[%s::config_callback] Setting new distance threshold to: %f.",
-      get_name().c_str(), config.distance_threshold);
+      "[config_callback] Setting new distance threshold to: %f.",
+      config.distance_threshold);
   }
 }
+#endif
 
 //////////////////////////////////////////////////////////////////////////////////////////////
 void
 pcl_ros::SegmentDifferences::input_target_callback(
-  const PointCloudConstPtr & cloud,
-  const PointCloudConstPtr & cloud_target)
+  const sensor_msgs::msg::PointCloud2::ConstSharedPtr & cloud,
+  const sensor_msgs::msg::PointCloud2::ConstSharedPtr & cloud_target)
 {
-  if (pub_output_.getNumSubscribers() <= 0) {
+  // No subscribers, no work
+  if (count_subscribers(pub_output_->get_topic_name()) <= 0) {
     return;
   }
 
   if (!isValid(cloud) || !isValid(cloud_target, "target")) {
-    RCLCPP_ERROR("[%s::input_indices_callback] Invalid input!", getName().c_str());
-    PointCloud output;
+    RCLCPP_ERROR(get_logger(), "[input_indices_callback] Invalid input!");
+    sensor_msgs::msg::PointCloud2 output;
     output.header = cloud->header;
-    pub_output_.publish(ros_ptr(output.makeShared()));
+    pub_output_->publish(output);
     return;
   }
 
   RCLCPP_DEBUG(
     get_logger(),
-    "[%s::input_indices_callback]\n"
-    "                                 - PointCloud with %d data points (%s), stamp %f, and "
-    "frame %s on topic %s received.\n"
-    "                                 - PointCloud with %d data points (%s), stamp %f, and "
-    "frame %s on topic %s received.",
-    get_name().c_str(),
-    cloud->width * cloud->height, pcl::getFieldsList(*cloud).c_str(), fromPCL(
-      cloud->header).stamp.toSec(), cloud->header.frame_id.c_str(), pnh_->resolveName(
-      "input").c_str(),
+    "[input_indices_callback]\n"
+    "  - PointCloud with %d data points (%s), stamp %d.%09d, and frame %s on topic %s received.\n"
+    "  - PointCloud with %d data points (%s), stamp %d.%09d, and frame %s on topic %s received.",
+    cloud->width * cloud->height, pcl::getFieldsList(*cloud).c_str(),
+    cloud->header.stamp.sec, cloud->header.stamp.nanosec,
+    cloud->header.frame_id.c_str(), "input",
     cloud_target->width * cloud_target->height, pcl::getFieldsList(*cloud_target).c_str(),
-    fromPCL(cloud_target->header).stamp.toSec(),
-    cloud_target->header.frame_id.c_str(), pnh_->resolveName("target").c_str());
+    cloud_target->header.stamp.sec, cloud_target->header.stamp.nanosec,
+    cloud_target->header.frame_id.c_str(), "target");
 
-  impl_.setInputCloud(pcl_ptr(cloud));
-  impl_.setTargetCloud(pcl_ptr(cloud_target));
+  boost::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> pcl_cloud = boost::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
+  pcl::fromROSMsg(*cloud, *pcl_cloud);
+  impl_.setInputCloud(pcl_cloud);
+
+  boost::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> pcl_cloud_target = boost::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
+  pcl::fromROSMsg(*cloud_target, *pcl_cloud_target);
+  impl_.setTargetCloud(pcl_cloud_target);
 
   PointCloud output;
   impl_.segment(output);
 
-  pub_output_.publish(ros_ptr(output.makeShared()));
+  sensor_msgs::msg::PointCloud2 ros_output;
+  pcl::toROSMsg(output, ros_output);
+  pub_output_->publish(ros_output);
+
   RCLCPP_DEBUG(
     get_logger(),
-    "[%s::segmentAndPublish] Published PointCloud2 with %zu points and stamp %f on topic %s",
-    get_name().c_str(),
-    output.points.size(), fromPCL(output.header).stamp.toSec(),
-    pnh_->resolveName("output").c_str());
+    "[segmentAndPublish] Published PointCloud2 with %u points and stamp %d.%09d on topic %s",
+    output.points.size(), fromPCL(output.header).stamp.sec, fromPCL(output.header).stamp.nanosec, "output");
 }
 
-//typedef pcl_ros::SegmentDifferences SegmentDifferences;
-//PLUGINLIB_EXPORT_CLASS(SegmentDifferences, nodelet::Nodelet)
+#include "rclcpp_components/register_node_macro.hpp"
+RCLCPP_COMPONENTS_REGISTER_NODE(pcl_ros::SegmentDifferences)

@@ -50,8 +50,6 @@ namespace pcl_ros
 {
 namespace sync_policies = message_filters::sync_policies;
 
-////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////
 /** \brief @b EuclideanClusterExtraction represents a segmentation class for cluster extraction in an Euclidean sense.
   * \author Radu Bogdan Rusu
   */
@@ -61,16 +59,13 @@ public:
   /** \brief Disallow the empty constructor. */
   EuclideanClusterExtraction() = delete;
 
-  explicit EuclideanClusterExtraction(const rclcpp::NodeOptions & options = rclcpp::NodeOptions())
-  : PCLNode("EuclideanClusterExtractionNode", options), 
-    publish_indices_(false), 
-    max_clusters_(std::numeric_limits<int>::max()) {}
+  explicit EuclideanClusterExtraction(const rclcpp::NodeOptions & options = rclcpp::NodeOptions());
 
 protected:
   /** \brief Publish indices or convert to PointCloud clusters. Default: false */
   bool publish_indices_;
 
-  rclcpp::Publisher<PointIndices>::SharedPtr pub_indices;
+  rclcpp::Publisher<pcl_msgs::msg::PointIndices>::SharedPtr pub_indices;
 
   /** \brief Maximum number of clusters to publish. */
   int max_clusters_;
@@ -87,21 +82,30 @@ protected:
     * \param indices the pointer to the input point cloud indices
     */
   void input_indices_callback(
-    const PointCloud2::ConstSharedPtr & cloud,
-    const PointIndicesConstPtr & indices);
+    const sensor_msgs::msg::PointCloud2::ConstSharedPtr & cloud,
+    const pcl_msgs::msg::PointIndices::ConstSharedPtr & indices);
 
 private:
   /** \brief The PCL implementation used. */
   pcl::EuclideanClusterExtraction<pcl::PointXYZ> impl_;
+
+  /** \brief Internal mutex. */
+  std::mutex mutex_;
+
+  /** \brief Parameter callback
+  * \param params parameter values to set
+  */
+  rcl_interfaces::msg::SetParametersResult
+  config_callback(const std::vector<rclcpp::Parameter> & params);
 
   /** \brief The input PointCloud subscriber. */
   rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr sub_input_;
 
   /** \brief Synchronized input, and indices.*/
   boost::shared_ptr<message_filters::Synchronizer<sync_policies::ExactTime<sensor_msgs::msg::PointCloud2,
-    PointIndices>>> sync_input_indices_e_;
+    pcl_msgs::msg::PointIndices>>> sync_input_indices_e_;
   boost::shared_ptr<message_filters::Synchronizer<sync_policies::ApproximateTime<sensor_msgs::msg::PointCloud2,
-    PointIndices>>> sync_input_indices_a_;
+    pcl_msgs::msg::PointIndices>>> sync_input_indices_a_;
 
 public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
