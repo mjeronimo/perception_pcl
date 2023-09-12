@@ -35,13 +35,13 @@
  *
  */
 
-#include "pcl_ros/segmentation/extract_polygonal_prism_data.hpp"
+#include <pcl_ros/segmentation/extract_polygonal_prism_data.hpp>
 
 #include <vector>
 
-#include "pcl/common/io.h"
-#include "pcl_conversions/pcl_conversions.h"
-#include "pcl_ros/transforms.hpp"
+#include <pcl/common/io.h>
+#include <pcl_conversions/pcl_conversions.h>
+#include <pcl_ros/transforms.hpp>
 
 using pcl_conversions::moveFromPCL;
 using pcl_conversions::moveToPCL;
@@ -50,6 +50,10 @@ using pcl_conversions::moveToPCL;
 pcl_ros::ExtractPolygonalPrismData::ExtractPolygonalPrismData(const rclcpp::NodeOptions & options)
 : PCLNode("ExtractPolygonalPrismDataNode", options)
 {
+  // TODO(mjeronimo)
+  // def add (self, name, paramtype, level, description, default = None, min = None, max = None, edit_method = ""):
+  // gen.add ("height_min", double_t, 0, "The minimum allowed distance to the plane model value a point will be considered from", 0.0, -10.0, 10.0)
+  // gen.add ("height_max", double_t, 0, "The maximum allowed distance to the plane model value a point will be considered from", 0.5, -10.0, 10.0)
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////
@@ -144,7 +148,6 @@ pcl_ros::ExtractPolygonalPrismData::config_callback(const std::vector<rclcpp::Pa
       impl_.setHeightLimits(height_min, height_max);
     }
   }
-
 
   rcl_interfaces::msg::SetParametersResult result;
   result.successful = true;
@@ -250,13 +253,13 @@ pcl_ros::ExtractPolygonalPrismData::input_hull_indices_callback(
     impl_.segment(pcl_inliers);
     moveFromPCL(pcl_inliers, inliers);
   }
+
   // Enforce that the TF frame and the timestamp are copied
   inliers.header = cloud->header;
+
+  // Publish the result
   pub_output_->publish(inliers);
-  RCLCPP_DEBUG(
-    get_logger(),
-    "[input_hull_callback] Publishing %zu indices.",
-    inliers.indices.size());
+  RCLCPP_DEBUG(get_logger(), "[input_hull_callback] Publishing %zu indices.", inliers.indices.size());
 }
 
 #include "rclcpp_components/register_node_macro.hpp"

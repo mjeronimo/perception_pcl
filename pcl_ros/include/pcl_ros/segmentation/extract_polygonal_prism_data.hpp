@@ -62,24 +62,17 @@ public:
     /** \brief Disallow the empty constructor. */
   ExtractPolygonalPrismData() = delete;
 
-  /** \brief ExtractPolygonalPrismDAta constructor
+  /** \brief ExtractPolygonalPrismData constructor
     * \param options node options
     */
   explicit ExtractPolygonalPrismData(const rclcpp::NodeOptions & options = rclcpp::NodeOptions());
 
 protected:
-  /** \brief The message filter subscriber for PointCloud2. */
-  message_filters::Subscriber<sensor_msgs::msg::PointCloud2> sub_hull_filter_;
+  /** \brief Lazy transport subscribe routine. */
+  void subscribe();
 
-  /** \brief Synchronized input, planar hull, and indices.*/
-  std::shared_ptr<message_filters::Synchronizer<sync_policies::ExactTime<sensor_msgs::msg::PointCloud2, sensor_msgs::msg::PointCloud2,
-    pcl_msgs::msg::PointIndices>>> sync_input_hull_indices_e_;
-  std::shared_ptr<message_filters::Synchronizer<sync_policies::ApproximateTime<sensor_msgs::msg::PointCloud2,
-    sensor_msgs::msg::PointCloud2, pcl_msgs::msg::PointIndices>>> sync_input_hull_indices_a_;
-
-  /** \brief Null passthrough filter, used for pushing empty elements in the
-    * synchronizer */
-  message_filters::PassThrough<pcl_msgs::msg::PointIndices> nf_;
+  /** \brief Lazy transport subscribe routine. */
+  void unsubscribe();
 
   /** \brief Input point cloud callback.
     * Because we want to use the same synchronizer object, we push back
@@ -93,11 +86,18 @@ protected:
     nf_.add(std::make_shared<PointIndices>(cloud));
   }
 
-  /** \brief Lazy transport subscribe routine. */
-  void subscribe();
+  /** \brief The message filter subscriber for PointCloud2. */
+  message_filters::Subscriber<sensor_msgs::msg::PointCloud2> sub_hull_filter_;
 
-  /** \brief Lazy transport subscribe routine. */
-  void unsubscribe();
+  /** \brief Synchronized input, planar hull, and indices.*/
+  std::shared_ptr<message_filters::Synchronizer<sync_policies::ExactTime<sensor_msgs::msg::PointCloud2, sensor_msgs::msg::PointCloud2,
+    pcl_msgs::msg::PointIndices>>> sync_input_hull_indices_e_;
+  std::shared_ptr<message_filters::Synchronizer<sync_policies::ApproximateTime<sensor_msgs::msg::PointCloud2,
+    sensor_msgs::msg::PointCloud2, pcl_msgs::msg::PointIndices>>> sync_input_hull_indices_a_;
+
+  /** \brief Null passthrough filter, used for pushing empty elements in the
+    * synchronizer */
+  message_filters::PassThrough<pcl_msgs::msg::PointIndices> nf_;
 
   /** \brief Input point cloud callback. Used when \a use_indices is set.
     * \param cloud the pointer to the input point cloud

@@ -58,26 +58,19 @@ public:
   /** \brief Disallow the empty constructor. */
   SegmentDifferences() = delete;
 
-  /** \brief ExtractPolygonalPrismDAta constructor
+  /** \brief SegmentDifferences constructor
     * \param options node options
     */
   explicit SegmentDifferences(const rclcpp::NodeOptions & options = rclcpp::NodeOptions());
 
 protected:
-  /** \brief The message filter subscriber for PointCloud2. */
-  message_filters::Subscriber<sensor_msgs::msg::PointCloud2> sub_target_filter_;
-
-  /** \brief Synchronized input, and planar hull.*/
-  std::shared_ptr<message_filters::Synchronizer<sync_policies::ExactTime<sensor_msgs::msg::PointCloud2,
-    sensor_msgs::msg::PointCloud2>>> sync_input_target_e_;
-  std::shared_ptr<message_filters::Synchronizer<sync_policies::ApproximateTime<sensor_msgs::msg::PointCloud2,
-    sensor_msgs::msg::PointCloud2>>> sync_input_target_a_;
-
-  /** \brief Nodelet initialization routine. */
+  /** \brief Initialization routine. */
   void onInit();
 
-  /** \brief LazyNodelet connection routine. */
+  /** \brief Lazy transport subscribe routine. */
   void subscribe();
+
+  /** \brief Lazy transport unsubscribe routine. */
   void unsubscribe();
 
   /** \brief Input point cloud callback.
@@ -88,9 +81,30 @@ protected:
     const PointCloud2::ConstSharedPtr & cloud,
     const PointCloud2::ConstSharedPtr & cloud_target);
 
+  /** \brief The message filter subscriber for PointCloud2. */
+  message_filters::Subscriber<sensor_msgs::msg::PointCloud2> sub_target_filter_;
+
+  /** \brief Synchronized input and planar hull.*/
+  std::shared_ptr<message_filters::Synchronizer<sync_policies::ExactTime<sensor_msgs::msg::PointCloud2,
+    sensor_msgs::msg::PointCloud2>>> sync_input_target_e_;
+  std::shared_ptr<message_filters::Synchronizer<sync_policies::ApproximateTime<sensor_msgs::msg::PointCloud2,
+    sensor_msgs::msg::PointCloud2>>> sync_input_target_a_;
+
 private:
-  /** \brief The PCL implementation used. */
+  /** \brief The underlying PCL implementation used. */
   pcl::SegmentDifferences<pcl::PointXYZ> impl_;
+
+  /** \brief Internal mutex. */
+  std::mutex mutex_;
+
+  /** \brief Pointer to parameters callback handle. */
+  OnSetParametersCallbackHandle::SharedPtr callback_handle_;
+
+  /** \brief Parameter callback
+    * \param params parameter values to set
+    */
+  rcl_interfaces::msg::SetParametersResult
+  config_callback(const std::vector<rclcpp::Parameter> & params);
 
 public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW

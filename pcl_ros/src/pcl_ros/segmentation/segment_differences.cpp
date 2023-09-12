@@ -42,6 +42,9 @@
 pcl_ros::SegmentDifferences::SegmentDifferences(const rclcpp::NodeOptions & options)
 : PCLNode("SegmentDifferencesNode", options)
 {
+  // TODO(mjeronimo)
+  // def add (self, name, paramtype, level, description, default = None, min = None, max = None, edit_method = ""):
+  // gen.add ("distance_threshold", double_t, 0, "The distance tolerance as a measure in the L2 Euclidean space between corresponding points.", 0.0, 0.0, 2.0)
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -93,19 +96,30 @@ pcl_ros::SegmentDifferences::unsubscribe()
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
-#if 0
-void
-pcl_ros::SegmentDifferences::config_callback(SegmentDifferencesConfig & config, uint32_t level)
+//////////////////////////////////////////////////////////////////////////////////////////////
+rcl_interfaces::msg::SetParametersResult
+pcl_ros::SegmentDifferences::config_callback(const std::vector<rclcpp::Parameter> & params)
 {
-  if (impl_.getDistanceThreshold() != config.distance_threshold) {
-    impl_.setDistanceThreshold(config.distance_threshold);
-    RCLCPP_DEBUG(
-      get_logger(),
-      "[config_callback] Setting new distance threshold to: %f.",
-      config.distance_threshold);
+  std::lock_guard<std::mutex> lock(mutex_);
+
+  for (const rclcpp::Parameter & param : params) {
+    if (param.get_name() == "distance_threshold") {
+      double cur_distance_threshold = impl_.getDistanceThreshold();
+      double new_distance_threshold = param.as_double();
+      if (cur_distance_threshold != new_distance_threshold) {
+        impl_.setDistanceThreshold(new_distance_threshold);
+        RCLCPP_DEBUG(
+          get_logger(),
+          "[config_callback] Setting new distance threshold to: %f.",
+          new_distance_threshold);
+      }
+    }
   }
+
+  rcl_interfaces::msg::SetParametersResult result;
+  result.successful = true;
+  return result;
 }
-#endif
 
 //////////////////////////////////////////////////////////////////////////////////////////////
 void
@@ -155,7 +169,7 @@ pcl_ros::SegmentDifferences::input_target_callback(
 
   RCLCPP_DEBUG(
     get_logger(),
-    "[segmentAndPublish] Published PointCloud2 with %u points and stamp %d.%09d on topic %s",
+    "[segmentAndPublish] Published PointCloud2 with %lu points and stamp %d.%09d on topic %s",
     output.points.size(), fromPCL(output.header).stamp.sec, fromPCL(output.header).stamp.nanosec, "output");
 }
 

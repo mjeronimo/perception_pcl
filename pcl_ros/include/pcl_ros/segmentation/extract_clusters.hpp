@@ -39,7 +39,6 @@
 #define PCL_ROS__SEGMENTATION__EXTRACT_CLUSTERS_HPP_
 
 #include <limits>
-#include <string>
 
 #include <message_filters/sync_policies/approximate_time.h>
 #include <message_filters/sync_policies/exact_time.h>
@@ -59,22 +58,19 @@ public:
   /** \brief Disallow the empty constructor. */
   EuclideanClusterExtraction() = delete;
 
+  /** \brief EuclideanClusterExtraction constructor
+    * \param options node options
+    */
   explicit EuclideanClusterExtraction(const rclcpp::NodeOptions & options = rclcpp::NodeOptions());
 
 protected:
-  /** \brief Publish indices or convert to PointCloud clusters. Default: false */
-  bool publish_indices_;
-
-  rclcpp::Publisher<pcl_msgs::msg::PointIndices>::SharedPtr pub_indices;
-
-  /** \brief Maximum number of clusters to publish. */
-  int max_clusters_;
-
-  /** \brief Nodelet initialization routine. */
+  /** \brief Initialization routine. */
   void onInit();
 
-  /** \brief LazyNodelet connection routine. */
+  /** \brief Lazy transport subscribe routine. */
   void subscribe();
+
+  /** \brief Lazy transport unsubscribe routine. */
   void unsubscribe();
 
   /** \brief Input point cloud callback.
@@ -85,8 +81,22 @@ protected:
     const sensor_msgs::msg::PointCloud2::ConstSharedPtr & cloud,
     const pcl_msgs::msg::PointIndices::ConstSharedPtr & indices);
 
+  /** \brief Input point cloud callback.
+    * \param cloud the pointer to the input point cloud
+    */
+  void input_callback(
+    const sensor_msgs::msg::PointCloud2::ConstSharedPtr & cloud);
+
+  /** \brief Publish indices or convert to PointCloud clusters. Default: false */
+  bool publish_indices_{false};
+
+  /** \brief Maximum number of clusters to publish. */
+  int max_clusters_ {std::numeric_limits<int>::max()};
+
+  rclcpp::Publisher<pcl_msgs::msg::PointIndices>::SharedPtr pub_indices;
+
 private:
-  /** \brief The PCL implementation used. */
+  /** \brief The underlying PCL implementation used. */
   pcl::EuclideanClusterExtraction<pcl::PointXYZ> impl_;
 
   /** \brief Internal mutex. */
