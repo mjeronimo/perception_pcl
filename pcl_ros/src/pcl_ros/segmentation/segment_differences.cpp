@@ -43,8 +43,8 @@ pcl_ros::SegmentDifferences::SegmentDifferences(const rclcpp::NodeOptions & opti
 : PCLNode("SegmentDifferencesNode", options)
 {
   init_parameters();
-  pub_output_ = create_publisher<sensor_msgs::msg::PointCloud2>("output", max_queue_size_);
   subscribe();
+  pub_output_ = create_publisher<sensor_msgs::msg::PointCloud2>("output", max_queue_size_);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -52,18 +52,24 @@ void
 pcl_ros::SegmentDifferences::init_parameters()
 {
   add_parameter(
-    "distance_threshold",
-    rclcpp::ParameterValue(0.0), // default value 
-    floating_point_range{0.0, 2.0, 0.0},  // from, to, step
-    "The distance tolerance as a measure in the L2 Euclidean space between corresponding points");
+      "distance_threshold",
+      rclcpp::ParameterValue(distance_threshold_),
+      floating_point_range{0.0, 2.0, 0.0}, // from, to, step
+      "The distance tolerance as a measure in the L2 Euclidean space between corresponding points");
 
-  double distance_threshold = get_parameter("distance_threshold").as_double();
-  impl_.setDistanceThreshold(distance_threshold);
+  distance_threshold_ = get_parameter("distance_threshold").as_double();
+
+  // Set the parameters on the underlying implementation
+  impl_.setDistanceThreshold(distance_threshold_);
+
+  // Initialize the parameter callback
+  set_parameters_callback_handle_ = add_on_set_parameters_callback(std::bind(&SegmentDifferences::set_parameters_callback, this, std::placeholders::_1));
 
   RCLCPP_DEBUG(
-    get_logger(),
-    "[init_parameters] initialized with the following parameters:\n"
-    " - distance_threshold: %f", distance_threshold);
+      get_logger(),
+      "[init_parameters] Node initialized with the following parameters:\n"
+      " - distance_threshold: %f",
+      distance_threshold_);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -103,20 +109,20 @@ pcl_ros::SegmentDifferences::unsubscribe()
 
 //////////////////////////////////////////////////////////////////////////////////////////////
 rcl_interfaces::msg::SetParametersResult
-pcl_ros::SegmentDifferences::config_callback(const std::vector<rclcpp::Parameter> & params)
+pcl_ros::SegmentDifferences::set_parameters_callback(const std::vector<rclcpp::Parameter> & params)
 {
   std::lock_guard<std::mutex> lock(mutex_);
 
   for (const rclcpp::Parameter & param : params) {
     if (param.get_name() == "distance_threshold") {
-      double cur_distance_threshold = impl_.getDistanceThreshold();
       double new_distance_threshold = param.as_double();
-      if (cur_distance_threshold != new_distance_threshold) {
-        impl_.setDistanceThreshold(new_distance_threshold);
+      if (distance_threshold_ != new_distance_threshold) {
+        distance_threshold_ = new_distance_threshold;
         RCLCPP_DEBUG(
           get_logger(),
-          "[config_callback] Setting new distance threshold to: %f.",
-          new_distance_threshold);
+          "[set_parameters_callback] Setting new distance threshold to: %f.",
+          distance_threshold_);
+        impl_.setDistanceThreshold(distance_threshold_);
       }
     }
   }
@@ -156,6 +162,9 @@ pcl_ros::SegmentDifferences::input_target_callback(
     cloud_target->width * cloud_target->height, pcl::getFieldsList(*cloud_target).c_str(),
     cloud_target->header.stamp.sec, cloud_target->header.stamp.nanosec,
     cloud_target->header.frame_id.c_str(), "target");
+
+  // Acquire the mutex before accessing the underlying implementation */
+  std::lock_guard<std::mutex> lock(mutex_);
 
   boost::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> pcl_cloud = boost::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
   pcl::fromROSMsg(*cloud, *pcl_cloud);

@@ -134,7 +134,7 @@ protected:
     * \param config the config object
     * \param level the dynamic reconfigure level
     */
-  void config_callback(SACSegmentationFromNormalsConfig & config, uint32_t level);
+  void set_parameters_callback(SACSegmentationFromNormalsConfig & config, uint32_t level);
 
   /** \brief Input point cloud callback.
     * \param cloud the pointer to the input point cloud

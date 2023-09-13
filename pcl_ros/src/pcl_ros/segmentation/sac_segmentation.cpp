@@ -196,7 +196,7 @@ pcl_ros::SACSegmentation::unsubscribe()
 
 //////////////////////////////////////////////////////////////////////////////////////////////
 void
-pcl_ros::SACSegmentation::config_callback(SACSegmentationConfig & config, uint32_t level)
+pcl_ros::SACSegmentation::set_parameters_callback(SACSegmentationConfig & config, uint32_t level)
 {
   boost::mutex::scoped_lock lock(mutex_);
 
@@ -205,7 +205,7 @@ pcl_ros::SACSegmentation::config_callback(SACSegmentationConfig & config, uint32
     impl_.setDistanceThreshold(config.distance_threshold);
     RCLCPP_DEBUG(
       get_logger(),
-      "[config_callback] Setting new distance to model threshold to: %f.",
+      "[set_parameters_callback] Setting new distance to model threshold to: %f.",
       config.distance_threshold);
   }
   // The maximum allowed difference between the model normal and the given axis _in radians_
@@ -213,7 +213,7 @@ pcl_ros::SACSegmentation::config_callback(SACSegmentationConfig & config, uint32
     impl_.setEpsAngle(config.eps_angle);
     RCLCPP_DEBUG(
       get_logger(),
-      "[config_callback] Setting new epsilon angle to model threshold to: %f (%f degrees).",
+      "[set_parameters_callback] Setting new epsilon angle to model threshold to: %f (%f degrees).",
       config.eps_angle, config.eps_angle * 180.0 / M_PI);
   }
 
@@ -222,7 +222,7 @@ pcl_ros::SACSegmentation::config_callback(SACSegmentationConfig & config, uint32
     min_inliers_ = config.min_inliers;
     RCLCPP_DEBUG(
       get_logger(),
-      "[config_callback] Setting new minimum number of inliers to: %d.",
+      "[set_parameters_callback] Setting new minimum number of inliers to: %d.",
       min_inliers_);
   }
 
@@ -231,7 +231,7 @@ pcl_ros::SACSegmentation::config_callback(SACSegmentationConfig & config, uint32
     impl_.setMaxIterations(config.max_iterations);
     RCLCPP_DEBUG(
       get_logger(),
-      "[config_callback] Setting new maximum number of iterations to: %d.",
+      "[set_parameters_callback] Setting new maximum number of iterations to: %d.",
       config.max_iterations);
   }
   if (impl_.getProbability() != config.probability) {
@@ -239,14 +239,14 @@ pcl_ros::SACSegmentation::config_callback(SACSegmentationConfig & config, uint32
     impl_.setProbability(config.probability);
     RCLCPP_DEBUG(
       get_logger(),
-      "[config_callback] Setting new probability to: %f.",
+      "[set_parameters_callback] Setting new probability to: %f.",
       config.probability);
   }
   if (impl_.getOptimizeCoefficients() != config.optimize_coefficients) {
     impl_.setOptimizeCoefficients(config.optimize_coefficients);
     RCLCPP_DEBUG(
       get_logger(),
-      "[config_callback] Setting coefficient optimization to: %s.",
+      "[set_parameters_callback] Setting coefficient optimization to: %s.",
       (config.optimize_coefficients) ? "true" : "false");
   }
 
@@ -254,25 +254,25 @@ pcl_ros::SACSegmentation::config_callback(SACSegmentationConfig & config, uint32
   impl_.getRadiusLimits(radius_min, radius_max);
   if (radius_min != config.radius_min) {
     radius_min = config.radius_min;
-    RCLCPP_DEBUG(get_logger(), "[config_callback] Setting minimum allowable model radius to: %f.", radius_min);
+    RCLCPP_DEBUG(get_logger(), "[set_parameters_callback] Setting minimum allowable model radius to: %f.", radius_min);
     impl_.setRadiusLimits(radius_min, radius_max);
   }
   if (radius_max != config.radius_max) {
     radius_max = config.radius_max;
-    RCLCPP_DEBUG(get_logger(), "[config_callback] Setting maximum allowable model radius to: %f.", radius_max);
+    RCLCPP_DEBUG(get_logger(), "[set_parameters_callback] Setting maximum allowable model radius to: %f.", radius_max);
     impl_.setRadiusLimits(radius_min, radius_max);
   }
 
   if (tf_input_frame_ != config.input_frame) {
     tf_input_frame_ = config.input_frame;
-    RCLCPP_DEBUG(get_logger(), "[config_callback] Setting the input TF frame to: %s.", tf_input_frame_.c_str());
+    RCLCPP_DEBUG(get_logger(), "[set_parameters_callback] Setting the input TF frame to: %s.", tf_input_frame_.c_str());
     RCLCPP_WARN(get_logger(), "input_frame TF not implemented yet!");
   }
   if (tf_output_frame_ != config.output_frame) {
     tf_output_frame_ = config.output_frame;
     RCLCPP_DEBUG(
       get_logger(),
-      "[config_callback] Setting the output TF frame to: %s.",
+      "[set_parameters_callback] Setting the output TF frame to: %s.",
       tf_output_frame_.c_str());
     RCLCPP_WARN(get_logger(), "output_frame TF not implemented yet!");
   }

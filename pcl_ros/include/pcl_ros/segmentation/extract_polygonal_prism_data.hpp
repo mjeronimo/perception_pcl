@@ -83,6 +83,28 @@ protected:
     */
   void input_callback(const sensor_msgs::msg::PointCloud2::ConstSharedPtr & input);
 
+  /** \brief Input point cloud callback. Used when \a use_indices is set.
+    * \param cloud the pointer to the input point cloud
+    * \param hull the pointer to the planar hull point cloud
+    * \param indices the pointer to the input point cloud indices
+    */
+  void input_hull_indices_callback(
+    const PointCloud2::ConstSharedPtr & cloud,
+    const PointCloud2::ConstSharedPtr & hull,
+    const PointIndices::ConstSharedPtr & indices);
+
+  /** \brief Parameter callback
+    * \param params parameter values to set
+    */
+  rcl_interfaces::msg::SetParametersResult
+  set_parameters_callback(const std::vector<rclcpp::Parameter> & params);
+
+  /** \brief Pointer to parameters callback handle. */
+  OnSetParametersCallbackHandle::SharedPtr set_parameters_callback_handle_;
+
+  /** \brief Internal mutex. */
+  std::mutex mutex_;
+
   /** \brief The minimum allowed distance to the plane model value a point will be considered from. */
   double height_min_{0.0};
 
@@ -102,31 +124,8 @@ protected:
     * synchronizer */
   message_filters::PassThrough<pcl_msgs::msg::PointIndices> null_filter_;
 
-  /** \brief Input point cloud callback. Used when \a use_indices is set.
-    * \param cloud the pointer to the input point cloud
-    * \param hull the pointer to the planar hull point cloud
-    * \param indices the pointer to the input point cloud indices
-    */
-  void input_hull_indices_callback(
-    const PointCloud2::ConstSharedPtr & cloud,
-    const PointCloud2::ConstSharedPtr & hull,
-    const PointIndices::ConstSharedPtr & indices);
-
-private:
   /** \brief The PCL implementation used. */
   pcl::ExtractPolygonalPrismData<pcl::PointXYZ> impl_;
-
-  /** \brief Internal mutex. */
-  std::mutex mutex_;
-
-  /** \brief Pointer to parameters callback handle. */
-  OnSetParametersCallbackHandle::SharedPtr callback_handle_;
-
-  /** \brief Parameter callback
-    * \param params parameter values to set
-    */
-  rcl_interfaces::msg::SetParametersResult
-  config_callback(const std::vector<rclcpp::Parameter> & params);
 
 public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW

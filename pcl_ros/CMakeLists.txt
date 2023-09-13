@@ -149,7 +149,7 @@ rclcpp_components_register_node(pcl_ros_segmentation
 
 rclcpp_components_register_node(pcl_ros_segmentation
     PLUGIN pcl_ros::ExtractPolygonalPrismData
-    EXECUTABLE extract_polynomial_prism_data)
+    EXECUTABLE extract_polygonal_prism_data)
 
 ### Declare the pcl_ros_surface library
 #add_library (pcl_ros_surface

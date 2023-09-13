@@ -105,6 +105,9 @@ pcl_ros::EuclideanClusterExtraction::init_parameters()
     pub_output_ = create_publisher<sensor_msgs::msg::PointCloud2>("output", max_queue_size_);
   }
 
+  // Initialize the parameter callback
+  set_parameters_callback_handle_ = add_on_set_parameters_callback(std::bind(&EuclideanClusterExtraction::set_parameters_callback, this, std::placeholders::_1));
+
   RCLCPP_DEBUG(
     get_logger(),
     "[init_parameters] Node initialized with the following parameters:\n"
@@ -170,7 +173,7 @@ pcl_ros::EuclideanClusterExtraction::unsubscribe()
 
 //////////////////////////////////////////////////////////////////////////////////////////////
 rcl_interfaces::msg::SetParametersResult
-pcl_ros::EuclideanClusterExtraction::config_callback(const std::vector<rclcpp::Parameter> & params)
+pcl_ros::EuclideanClusterExtraction::set_parameters_callback(const std::vector<rclcpp::Parameter> & params)
 {
   std::lock_guard<std::mutex> lock(mutex_);
 
@@ -181,7 +184,7 @@ pcl_ros::EuclideanClusterExtraction::config_callback(const std::vector<rclcpp::P
         cluster_tolerance_ = new_cluster_tolerance;
         RCLCPP_DEBUG(
           get_logger(),
-          "[config_callback] Setting new clustering tolerance to: %f.",
+          "[set_parameters_callback] Setting new clustering tolerance to: %f.",
           cluster_tolerance_);
         impl_.setClusterTolerance(cluster_tolerance_);
       }
@@ -193,7 +196,7 @@ pcl_ros::EuclideanClusterExtraction::config_callback(const std::vector<rclcpp::P
         cluster_min_size_ = new_cluster_min_size;
         RCLCPP_DEBUG(
           get_logger(),
-          "[config_callback] Setting the minimum cluster size to: %d.",
+          "[set_parameters_callback] Setting the minimum cluster size to: %d.",
           cluster_min_size_);
         impl_.setMinClusterSize(cluster_min_size_);
       }
@@ -205,7 +208,7 @@ pcl_ros::EuclideanClusterExtraction::config_callback(const std::vector<rclcpp::P
         cluster_max_size_ = new_cluster_max_size;
         RCLCPP_DEBUG(
           get_logger(),
-          "[config_callback] Setting the maximum cluster size to: %d.",
+          "[set_parameters_callback] Setting the maximum cluster size to: %d.",
           cluster_max_size_);
         impl_.setMaxClusterSize(cluster_max_size_);
       }
@@ -216,7 +219,7 @@ pcl_ros::EuclideanClusterExtraction::config_callback(const std::vector<rclcpp::P
       if (max_clusters_ != new_max_clusters) {
         RCLCPP_DEBUG(
           get_logger(),
-          "[config_callback] Setting the maximum cluster size to: %d.",
+          "[set_parameters_callback] Setting the maximum cluster size to: %d.",
           max_clusters_);
       }
     }

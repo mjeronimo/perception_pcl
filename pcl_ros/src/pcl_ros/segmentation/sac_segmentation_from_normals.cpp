@@ -225,7 +225,7 @@ pcl_ros::SACSegmentationFromNormals::axis_callback(
 
 //////////////////////////////////////////////////////////////////////////////////////////////
 void
-pcl_ros::SACSegmentationFromNormals::config_callback(
+pcl_ros::SACSegmentationFromNormals::set_parameters_callback(
   SACSegmentationFromNormalsConfig & config,
   uint32_t level)
 {
@@ -235,7 +235,7 @@ pcl_ros::SACSegmentationFromNormals::config_callback(
     impl_.setDistanceThreshold(config.distance_threshold);
     RCLCPP_DEBUG(
       get_logger(),
-      "[config_callback] Setting distance to model threshold to: %f.",
+      "[set_parameters_callback] Setting distance to model threshold to: %f.",
       config.distance_threshold);
   }
   // The maximum allowed difference between the model normal and the given axis _in radians_
@@ -243,7 +243,7 @@ pcl_ros::SACSegmentationFromNormals::config_callback(
     impl_.setEpsAngle(config.eps_angle);
     RCLCPP_DEBUG(
       get_logger(),
-      "[config_callback] Setting new epsilon angle to model threshold to: %f (%f degrees).",
+      "[set_parameters_callback] Setting new epsilon angle to model threshold to: %f (%f degrees).",
       config.eps_angle, config.eps_angle * 180.0 / M_PI);
   }
 
@@ -251,7 +251,7 @@ pcl_ros::SACSegmentationFromNormals::config_callback(
     impl_.setMaxIterations(config.max_iterations);
     RCLCPP_DEBUG(
       get_logger(),
-      "[config_callback] Setting new maximum number of iterations to: %d.",
+      "[set_parameters_callback] Setting new maximum number of iterations to: %d.",
       config.max_iterations);
   }
 
@@ -260,7 +260,7 @@ pcl_ros::SACSegmentationFromNormals::config_callback(
     min_inliers_ = config.min_inliers;
     RCLCPP_DEBUG(
       get_logger(),
-      "[config_callback] Setting new minimum number of inliers to: %d.",
+      "[set_parameters_callback] Setting new minimum number of inliers to: %d.",
       min_inliers_);
   }
 
@@ -269,7 +269,7 @@ pcl_ros::SACSegmentationFromNormals::config_callback(
     impl_.setProbability(config.probability);
     RCLCPP_DEBUG(
       get_logger(),
-      "[config_callback] Setting new probability to: %f.",
+      "[set_parameters_callback] Setting new probability to: %f.",
       config.probability);
   }
 
@@ -277,7 +277,7 @@ pcl_ros::SACSegmentationFromNormals::config_callback(
     impl_.setOptimizeCoefficients(config.optimize_coefficients);
     RCLCPP_DEBUG(
       get_logger(),
-      "[config_callback] Setting coefficient optimization to: %s.",
+      "[set_parameters_callback] Setting coefficient optimization to: %s.",
       (config.optimize_coefficients) ? "true" : "false");
   }
 
@@ -285,7 +285,7 @@ pcl_ros::SACSegmentationFromNormals::config_callback(
     impl_.setNormalDistanceWeight(config.normal_distance_weight);
     RCLCPP_DEBUG(
       get_logger(),
-      "[config_callback] Setting new distance weight to: %f.",
+      "[set_parameters_callback] Setting new distance weight to: %f.",
       config.normal_distance_weight);
   }
 
@@ -295,7 +295,7 @@ pcl_ros::SACSegmentationFromNormals::config_callback(
     radius_min = config.radius_min;
     RCLCPP_DEBUG(
       get_logger(),
-      "[config_callback] Setting minimum allowable model radius to: %f.",
+      "[set_parameters_callback] Setting minimum allowable model radius to: %f.",
       radius_min);
     impl_.setRadiusLimits(radius_min, radius_max);
   }
@@ -303,7 +303,7 @@ pcl_ros::SACSegmentationFromNormals::config_callback(
     radius_max = config.radius_max;
     RCLCPP_DEBUG(
       get_logger(),
-      "[config_callback] Setting maximum allowable model radius to: %f.",
+      "[set_parameters_callback] Setting maximum allowable model radius to: %f.",
       radius_max);
     impl_.setRadiusLimits(radius_min, radius_max);
   }

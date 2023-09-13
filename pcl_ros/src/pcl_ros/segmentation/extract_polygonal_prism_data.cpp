@@ -54,6 +54,7 @@ pcl_ros::ExtractPolygonalPrismData::ExtractPolygonalPrismData(const rclcpp::Node
   subscribe();
 }
 
+//////////////////////////////////////////////////////////////////////////////////////////////
 void
 pcl_ros::ExtractPolygonalPrismData::init_parameters()
 {
@@ -74,6 +75,9 @@ pcl_ros::ExtractPolygonalPrismData::init_parameters()
 
   // Set the parameters on the underlying implementation
   impl_.setHeightLimits(height_min_, height_max_);
+
+  // Initialize the parameter callback
+  set_parameters_callback_handle_ = add_on_set_parameters_callback(std::bind(&ExtractPolygonalPrismData::set_parameters_callback, this, std::placeholders::_1));
 
   RCLCPP_DEBUG(
     get_logger(),
@@ -156,7 +160,7 @@ pcl_ros::ExtractPolygonalPrismData::input_callback(const sensor_msgs::msg::Point
 
 //////////////////////////////////////////////////////////////////////////////////////////////
 rcl_interfaces::msg::SetParametersResult
-pcl_ros::ExtractPolygonalPrismData::config_callback(const std::vector<rclcpp::Parameter> & params)
+pcl_ros::ExtractPolygonalPrismData::set_parameters_callback(const std::vector<rclcpp::Parameter> & params)
 {
   std::lock_guard<std::mutex> lock(mutex_);
 
@@ -167,7 +171,7 @@ pcl_ros::ExtractPolygonalPrismData::config_callback(const std::vector<rclcpp::Pa
         height_min_ = new_height_min;
         RCLCPP_DEBUG(
           get_logger(),
-          "[config_callback] Setting new minimum height to the planar model to: %f.",
+          "[set_parameters_callback] Setting new minimum height to the planar model to: %f.",
           height_min_);
         impl_.setHeightLimits(height_min_, height_max_);
       }
@@ -179,7 +183,7 @@ pcl_ros::ExtractPolygonalPrismData::config_callback(const std::vector<rclcpp::Pa
         height_max_ = new_height_max;
         RCLCPP_DEBUG(
           get_logger(),
-          "[config_callback] Setting new maximum height to the planar model to: %f.",
+          "[set_parameters_callback] Setting new maximum height to the planar model to: %f.",
           height_max_);
         impl_.setHeightLimits(height_min_, height_max_);
       }

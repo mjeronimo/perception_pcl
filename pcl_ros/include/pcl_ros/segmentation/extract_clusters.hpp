@@ -88,6 +88,18 @@ protected:
   void input_callback(
     const sensor_msgs::msg::PointCloud2::ConstSharedPtr & cloud);
 
+  /** \brief Parameter callback
+  * \param params parameter values to set
+  */
+  rcl_interfaces::msg::SetParametersResult
+  set_parameters_callback(const std::vector<rclcpp::Parameter> & params);
+
+    /** \brief Pointer to parameters callback handle. */
+  OnSetParametersCallbackHandle::SharedPtr set_parameters_callback_handle_;
+
+  /** \brief Internal mutex. */
+  std::mutex mutex_;
+
   /** \brief The spatial tolerance as a measure in the L2 Euclidean space. */
   double cluster_tolerance_{0.05};
 
@@ -106,19 +118,6 @@ protected:
   /** \brief A publisher for the optional PointIndices output. */
   rclcpp::Publisher<pcl_msgs::msg::PointIndices>::SharedPtr pub_indices;
 
-private:
-  /** \brief The underlying PCL implementation used. */
-  pcl::EuclideanClusterExtraction<pcl::PointXYZ> impl_;
-
-  /** \brief Internal mutex. */
-  std::mutex mutex_;
-
-  /** \brief Parameter callback
-  * \param params parameter values to set
-  */
-  rcl_interfaces::msg::SetParametersResult
-  config_callback(const std::vector<rclcpp::Parameter> & params);
-
   /** \brief The input PointCloud subscriber. */
   rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr sub_input_;
 
@@ -127,6 +126,9 @@ private:
     pcl_msgs::msg::PointIndices>>> sync_input_indices_e_;
   boost::shared_ptr<message_filters::Synchronizer<sync_policies::ApproximateTime<sensor_msgs::msg::PointCloud2,
     pcl_msgs::msg::PointIndices>>> sync_input_indices_a_;
+
+  /** \brief The underlying PCL implementation used. */
+  pcl::EuclideanClusterExtraction<pcl::PointXYZ> impl_;
 
 public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW

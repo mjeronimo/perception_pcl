@@ -81,6 +81,21 @@ protected:
     const PointCloud2::ConstSharedPtr & cloud,
     const PointCloud2::ConstSharedPtr & cloud_target);
 
+  /** \brief Parameter callback
+    * \param params parameter values to set
+    */
+  rcl_interfaces::msg::SetParametersResult
+  set_parameters_callback(const std::vector<rclcpp::Parameter> & params);
+
+  /** \brief Pointer to parameters callback handle. */
+  OnSetParametersCallbackHandle::SharedPtr set_parameters_callback_handle_;
+
+  /** \brief Internal mutex. */
+  std::mutex mutex_;
+
+  /** \brief The distance tolerance as a measure in the L2 Euclidean space between corresponding points. */
+  double distance_threshold_{0.0};
+
   /** \brief The message filter subscriber for PointCloud2. */
   message_filters::Subscriber<sensor_msgs::msg::PointCloud2> sub_target_filter_;
 
@@ -90,21 +105,8 @@ protected:
   std::shared_ptr<message_filters::Synchronizer<sync_policies::ApproximateTime<sensor_msgs::msg::PointCloud2,
     sensor_msgs::msg::PointCloud2>>> sync_input_target_a_;
 
-private:
   /** \brief The underlying PCL implementation used. */
   pcl::SegmentDifferences<pcl::PointXYZ> impl_;
-
-  /** \brief Internal mutex. */
-  std::mutex mutex_;
-
-  /** \brief Pointer to parameters callback handle. */
-  OnSetParametersCallbackHandle::SharedPtr callback_handle_;
-
-  /** \brief Parameter callback
-    * \param params parameter values to set
-    */
-  rcl_interfaces::msg::SetParametersResult
-  config_callback(const std::vector<rclcpp::Parameter> & params);
 
 public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
