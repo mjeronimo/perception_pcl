@@ -68,6 +68,9 @@ public:
   explicit ExtractPolygonalPrismData(const rclcpp::NodeOptions & options = rclcpp::NodeOptions());
 
 protected:
+  /** \brief Initialize the node's parameters. */
+  void init_parameters();
+
   /** \brief Lazy transport subscribe routine. */
   void subscribe();
 
@@ -78,13 +81,13 @@ protected:
     * Because we want to use the same synchronizer object, we push back
     * empty elements with the same timestamp.
     */
-  inline void
-  input_callback(const sensor_msgs::msg::PointCloud2::ConstSharedPtr & input)
-  {
-    PointIndices cloud;
-    cloud.header.stamp = input->header.stamp;
-    nf_.add(std::make_shared<PointIndices>(cloud));
-  }
+  void input_callback(const sensor_msgs::msg::PointCloud2::ConstSharedPtr & input);
+
+  /** \brief The minimum allowed distance to the plane model value a point will be considered from. */
+  double height_min_{0.0};
+
+  /** \brief The maximum allowed distance to the plane model value a point will be considered from. */
+  double height_max_{0.5};
 
   /** \brief The message filter subscriber for PointCloud2. */
   message_filters::Subscriber<sensor_msgs::msg::PointCloud2> sub_hull_filter_;
@@ -97,7 +100,7 @@ protected:
 
   /** \brief Null passthrough filter, used for pushing empty elements in the
     * synchronizer */
-  message_filters::PassThrough<pcl_msgs::msg::PointIndices> nf_;
+  message_filters::PassThrough<pcl_msgs::msg::PointIndices> null_filter_;
 
   /** \brief Input point cloud callback. Used when \a use_indices is set.
     * \param cloud the pointer to the input point cloud

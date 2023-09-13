@@ -50,10 +50,37 @@ using pcl_conversions::moveToPCL;
 pcl_ros::ExtractPolygonalPrismData::ExtractPolygonalPrismData(const rclcpp::NodeOptions & options)
 : PCLNode("ExtractPolygonalPrismDataNode", options)
 {
-  // TODO(mjeronimo)
-  // def add (self, name, paramtype, level, description, default = None, min = None, max = None, edit_method = ""):
-  // gen.add ("height_min", double_t, 0, "The minimum allowed distance to the plane model value a point will be considered from", 0.0, -10.0, 10.0)
-  // gen.add ("height_max", double_t, 0, "The maximum allowed distance to the plane model value a point will be considered from", 0.5, -10.0, 10.0)
+  init_parameters();
+  subscribe();
+}
+
+void
+pcl_ros::ExtractPolygonalPrismData::init_parameters()
+{
+  add_parameter(
+    "height_min",
+    rclcpp::ParameterValue(height_min_),
+    floating_point_range{-10.0, 10.0, 0.0},  // from, to, step
+    "The minimum allowed distance to the plane model value a point will be considered from");
+
+  add_parameter(
+    "height_max",
+    rclcpp::ParameterValue(height_max_),
+    floating_point_range{-10.0, 10.0, 0.0},  // from, to, step
+    "The maximum allowed distance to the plane model value a point will be considered from");
+
+  height_min_ = get_parameter("height_min").as_double();
+  height_max_ = get_parameter("height_max").as_double();
+
+  // Set the parameters on the underlying implementation
+  impl_.setHeightLimits(height_min_, height_max_);
+
+  RCLCPP_DEBUG(
+    get_logger(),
+    "[init_parameters] Node initialized with the following parameters:\n"
+    " - height_min : %f\n"
+    " - height_max : %f\n",
+    height_min_, height_max_);
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////
@@ -93,9 +120,9 @@ pcl_ros::ExtractPolygonalPrismData::subscribe()
     sub_input_filter_.registerCallback(std::bind(&ExtractPolygonalPrismData::input_callback, this, std::placeholders::_1));
 
     if (approximate_sync_) {
-      sync_input_hull_indices_a_->connectInput(sub_input_filter_, sub_hull_filter_, nf_);
+      sync_input_hull_indices_a_->connectInput(sub_input_filter_, sub_hull_filter_, null_filter_);
     } else {
-      sync_input_hull_indices_e_->connectInput(sub_input_filter_, sub_hull_filter_, nf_);
+      sync_input_hull_indices_e_->connectInput(sub_input_filter_, sub_hull_filter_, null_filter_);
     }
   }
 
@@ -119,33 +146,43 @@ pcl_ros::ExtractPolygonalPrismData::unsubscribe()
   }
 }
 
+void
+pcl_ros::ExtractPolygonalPrismData::input_callback(const sensor_msgs::msg::PointCloud2::ConstSharedPtr & input)
+{
+  PointIndices cloud;
+  cloud.header.stamp = input->header.stamp;
+  null_filter_.add(std::make_shared<PointIndices>(cloud));
+}
+
 //////////////////////////////////////////////////////////////////////////////////////////////
 rcl_interfaces::msg::SetParametersResult
 pcl_ros::ExtractPolygonalPrismData::config_callback(const std::vector<rclcpp::Parameter> & params)
 {
   std::lock_guard<std::mutex> lock(mutex_);
 
-  double height_min;
-  double height_max;
-  impl_.getHeightLimits(height_min, height_max);
-
   for (const rclcpp::Parameter & param : params) {
     if (param.get_name() == "height_min") {
-      height_min = param.as_double();
-      RCLCPP_DEBUG(
-        get_logger(),
-        "[config_callback] Setting new minimum height to the planar model to: %f.",
-        height_min);
-      impl_.setHeightLimits(height_min, height_max);
+      double new_height_min = param.as_double();
+      if (height_min_ != new_height_min) {
+        height_min_ = new_height_min;
+        RCLCPP_DEBUG(
+          get_logger(),
+          "[config_callback] Setting new minimum height to the planar model to: %f.",
+          height_min_);
+        impl_.setHeightLimits(height_min_, height_max_);
+      }
     }
 
     if (param.get_name() == "height_max") {
-      height_max = param.as_double();
-      RCLCPP_DEBUG(
-        get_logger(),
-        "[config_callback] Setting new maximum height to the planar model to: %f.",
-        height_max);
-      impl_.setHeightLimits(height_min, height_max);
+      double new_height_max = param.as_double();
+      if (height_max_ != new_height_max) {
+        height_max_ = new_height_max;
+        RCLCPP_DEBUG(
+          get_logger(),
+          "[config_callback] Setting new maximum height to the planar model to: %f.",
+          height_max_);
+        impl_.setHeightLimits(height_min_, height_max_);
+      }
     }
   }
 
@@ -207,6 +244,9 @@ pcl_ros::ExtractPolygonalPrismData::input_hull_indices_callback(
       hull->width * hull->height, hull->header.frame_id.c_str(), "planar_hull");
   }
   ///
+
+  // Acquire the mutex before accessing the underlying implementation */
+  std::lock_guard<std::mutex> lock(mutex_);
 
   // Check whether the user has given a different input TF frame
   if (cloud->header.frame_id != hull->header.frame_id) {

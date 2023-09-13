@@ -44,6 +44,7 @@
 #include <message_filters/sync_policies/exact_time.h>
 #include <pcl_ros/pcl_node.hpp>
 #include <pcl/segmentation/extract_clusters.h>
+#include <rclcpp/rclcpp.hpp>
 
 namespace pcl_ros
 {
@@ -64,8 +65,8 @@ public:
   explicit EuclideanClusterExtraction(const rclcpp::NodeOptions & options = rclcpp::NodeOptions());
 
 protected:
-  /** \brief Initialization routine. */
-  void onInit();
+  /** \brief Initialize the node's parameters. */
+  void init_parameters();
 
   /** \brief Lazy transport subscribe routine. */
   void subscribe();
@@ -87,12 +88,22 @@ protected:
   void input_callback(
     const sensor_msgs::msg::PointCloud2::ConstSharedPtr & cloud);
 
-  /** \brief Publish indices or convert to PointCloud clusters. Default: false */
-  bool publish_indices_{false};
+  /** \brief The spatial tolerance as a measure in the L2 Euclidean space. */
+  double cluster_tolerance_{0.05};
 
-  /** \brief Maximum number of clusters to publish. */
+  /** \brief The minimum number of points that a cluster must contain in order to be accepted. */
+  int cluster_min_size_{1};
+
+  //** The maximum number of points that a cluster must contain in order to be accepted. */
+  int cluster_max_size_{2147483647};
+
+  /** \brief Maximum number of clusters to extract */
   int max_clusters_ {std::numeric_limits<int>::max()};
 
+  /** \brief Publish indices or convert to PointCloud clusters. */
+  bool publish_indices_{false};
+
+  /** \brief A publisher for the optional PointIndices output. */
   rclcpp::Publisher<pcl_msgs::msg::PointIndices>::SharedPtr pub_indices;
 
 private:

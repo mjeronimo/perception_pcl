@@ -42,22 +42,28 @@
 pcl_ros::SegmentDifferences::SegmentDifferences(const rclcpp::NodeOptions & options)
 : PCLNode("SegmentDifferencesNode", options)
 {
-  // TODO(mjeronimo)
-  // def add (self, name, paramtype, level, description, default = None, min = None, max = None, edit_method = ""):
-  // gen.add ("distance_threshold", double_t, 0, "The distance tolerance as a measure in the L2 Euclidean space between corresponding points.", 0.0, 0.0, 2.0)
+  init_parameters();
+  pub_output_ = create_publisher<sensor_msgs::msg::PointCloud2>("output", max_queue_size_);
+  subscribe();
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 void
-pcl_ros::SegmentDifferences::onInit()
+pcl_ros::SegmentDifferences::init_parameters()
 {
-  pub_output_ = create_publisher<sensor_msgs::msg::PointCloud2>("output", max_queue_size_);
+  add_parameter(
+    "distance_threshold",
+    rclcpp::ParameterValue(0.0), // default value 
+    floating_point_range{0.0, 2.0, 0.0},  // from, to, step
+    "The distance tolerance as a measure in the L2 Euclidean space between corresponding points");
+
+  double distance_threshold = get_parameter("distance_threshold").as_double();
+  impl_.setDistanceThreshold(distance_threshold);
 
   RCLCPP_DEBUG(
     get_logger(),
-    "[onInit] Nodelet successfully created with the following parameters:\n"
-    " - max_queue_size: %d",
-    max_queue_size_);
+    "[init_parameters] initialized with the following parameters:\n"
+    " - distance_threshold: %f", distance_threshold);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -95,7 +101,6 @@ pcl_ros::SegmentDifferences::unsubscribe()
   sub_target_filter_.unsubscribe();
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////////////////
 rcl_interfaces::msg::SetParametersResult
 pcl_ros::SegmentDifferences::config_callback(const std::vector<rclcpp::Parameter> & params)

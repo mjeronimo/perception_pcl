@@ -64,8 +64,8 @@ public:
   explicit SegmentDifferences(const rclcpp::NodeOptions & options = rclcpp::NodeOptions());
 
 protected:
-  /** \brief Initialization routine. */
-  void onInit();
+  /** \brief Initialize the node's parameters. */
+  void init_parameters();
 
   /** \brief Lazy transport subscribe routine. */
   void subscribe();

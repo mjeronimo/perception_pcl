@@ -40,39 +40,65 @@
 #include <functional>
 #include <vector>
 
-#include "pcl/common/io.h"
 #include "pcl_conversions/pcl_conversions.h"
 #include "pcl/PointIndices.h"
 #include "rclcpp/rclcpp.hpp"
 
-using pcl_conversions::fromPCL;
 using pcl_conversions::moveFromPCL;
-using pcl_conversions::toPCL;
 
 //////////////////////////////////////////////////////////////////////////////////////////////
 pcl_ros::EuclideanClusterExtraction::EuclideanClusterExtraction(const rclcpp::NodeOptions & options)
   : PCLNode("EuclideanClusterExtractionNode", options)
 {
-  // TODO(mjeronimo)
-  // def add (self, name, paramtype, level, description, default = None, min = None, max = None, edit_method = ""):
-  // gen.add ("cluster_tolerance", double_t, 0, "The spatial tolerance as a measure in the L2 Euclidean space", 0.05, 0.0, 2.0)
-  // gen.add ("cluster_min_size", int_t, 0, "The minimum number of points that a cluster must contain in order to be accepted", 1, 0, 1000)
-  // gen.add ("cluster_max_size", int_t, 0, "The maximum number of points that a cluster must contain in order to be accepted", 2147483647, 0, 2147483647)
-  // gen.add ("max_clusters", int_t, 0, "The maximum number of clusters to extract.", 2147483647, 1, 2147483647)
+  init_parameters();
+  subscribe();
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////
 void
-pcl_ros::EuclideanClusterExtraction::onInit()
+pcl_ros::EuclideanClusterExtraction::init_parameters()
 {
-  // ---[ Mandatory parameters
-  double cluster_tolerance;
-  if (!get_parameter("cluster_tolerance", cluster_tolerance)) {
-    RCLCPP_ERROR(get_logger(), "[onInit] Need a 'cluster_tolerance' parameter to be set before continuing!");
-    return;
-  }
+  add_parameter(
+    "cluster_tolerance",
+    rclcpp::ParameterValue(cluster_tolerance_),
+    floating_point_range{0.0, 2.0, 0.0},  // from, to, step
+    "The spatial tolerance as a measure in the L2 Euclidean space");
 
-  get_parameter("publish_indices", publish_indices_);
+  add_parameter(
+    "cluster_min_size",
+    rclcpp::ParameterValue(cluster_min_size_),
+    integer_range{0, 1000, 0},  // from, to, step
+    "The minimum number of points that a cluster must contain in order to be accepted");
+
+  add_parameter(
+    "cluster_max_size",
+    rclcpp::ParameterValue(cluster_max_size_),
+    integer_range{0, 2147483647, 0},  // from, to, step
+    "The maximum number of points that a cluster must contain in order to be accepted");
+
+  add_parameter(
+    "max_clusters",
+    rclcpp::ParameterValue(max_clusters_),
+    integer_range{1, 2147483647, 0},  // from, to, step
+    "The maximum number of clusters to extract");
+  
+  add_parameter(
+    "publish_indices",
+    rclcpp::ParameterValue(publish_indices_),
+    "Whether to publish the point cloud indices");
+
+  cluster_tolerance_ = get_parameter("cluster_tolerance").as_double();
+  cluster_min_size_ = get_parameter("cluster_min_size").as_int();
+  cluster_max_size_ = get_parameter("cluster_max_size").as_int();
+  max_clusters_ = get_parameter("max_clusters").as_int();
+  publish_indices_ = get_parameter("publish_indices").as_bool();
+
+  // Set the parameters on the underlying implementation
+  impl_.setClusterTolerance(cluster_tolerance_);
+  impl_.setMinClusterSize(cluster_min_size_);
+  impl_.setMaxClusterSize(cluster_max_size_);
+
+  // Create the requested output publisher type
   if (publish_indices_) {
     pub_indices = create_publisher<pcl_msgs::msg::PointIndices>("output", max_queue_size_);
   } else {
@@ -81,14 +107,13 @@ pcl_ros::EuclideanClusterExtraction::onInit()
 
   RCLCPP_DEBUG(
     get_logger(),
-    "[onInit] Nodelet successfully created with the following parameters:\n"
-    " - max_queue_size    : %d\n"
-    " - use_indices       : %s\n"
-    " - cluster_tolerance : %f\n",
-    max_queue_size_, (use_indices_) ? "true" : "false", cluster_tolerance);
-
-  // Set given parameters here
-  impl_.setClusterTolerance(cluster_tolerance);
+    "[init_parameters] Node initialized with the following parameters:\n"
+    " - cluster_tolerance : %f\n"
+    " - cluster_min_size : %d\n"
+    " - cluster_max_size : %d\n"
+    " - max_clusters : %d\n"
+    " - publish_indices : %s\n", 
+    cluster_tolerance_, cluster_min_size_, cluster_max_size_, max_clusters_, publish_indices_? "true" : "false");
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////
@@ -151,54 +176,53 @@ pcl_ros::EuclideanClusterExtraction::config_callback(const std::vector<rclcpp::P
 
   for (const rclcpp::Parameter & param : params) {
     if (param.get_name() == "cluster_tolerance") {
-      double cur_cluster_tolerance = impl_.getClusterTolerance();
       double new_cluster_tolerance = param.as_double();
-      if (cur_cluster_tolerance != new_cluster_tolerance) {
-        impl_.setClusterTolerance(new_cluster_tolerance);
+      if (cluster_tolerance_ != new_cluster_tolerance) {
+        cluster_tolerance_ = new_cluster_tolerance;
         RCLCPP_DEBUG(
           get_logger(),
           "[config_callback] Setting new clustering tolerance to: %f.",
-          new_cluster_tolerance);
+          cluster_tolerance_);
+        impl_.setClusterTolerance(cluster_tolerance_);
       }
     }
 
     if (param.get_name() == "cluster_min_size")  {
-      int cur_cluster_min_size = impl_.getMinClusterSize();
       int new_cluster_min_size = param.as_int();
-
-      if (cur_cluster_min_size != new_cluster_min_size) {
-        impl_.setMinClusterSize(new_cluster_min_size);
+      if (cluster_min_size_ != new_cluster_min_size) {
+        cluster_min_size_ = new_cluster_min_size;
         RCLCPP_DEBUG(
           get_logger(),
           "[config_callback] Setting the minimum cluster size to: %d.",
-          new_cluster_min_size);
+          cluster_min_size_);
+        impl_.setMinClusterSize(cluster_min_size_);
       }
     }
 
     if (param.get_name() == "cluster_min_size")  {
-      int cur_cluster_max_size = impl_.getMaxClusterSize();
       int new_cluster_max_size = param.as_int();
-
-      if (cur_cluster_max_size != new_cluster_max_size) {
-        impl_.setMaxClusterSize(new_cluster_max_size);
+      if (cluster_max_size_ != new_cluster_max_size) {
+        cluster_max_size_ = new_cluster_max_size;
         RCLCPP_DEBUG(
           get_logger(),
           "[config_callback] Setting the maximum cluster size to: %d.",
-          new_cluster_max_size);
+          cluster_max_size_);
+        impl_.setMaxClusterSize(cluster_max_size_);
       }
     }
 
     if (param.get_name() == "max_clusters")  {
       int new_max_clusters = param.as_int();
-
       if (max_clusters_ != new_max_clusters) {
-        max_clusters_ = new_max_clusters;
         RCLCPP_DEBUG(
           get_logger(),
           "[config_callback] Setting the maximum cluster size to: %d.",
-          new_max_clusters);
+          max_clusters_);
       }
     }
+
+    // Note: "publish_indices" cannot be dynamically updated. It is only respected
+    // at construction, where the output publisher is created.
   }
 
   rcl_interfaces::msg::SetParametersResult result;
@@ -256,6 +280,9 @@ pcl_ros::EuclideanClusterExtraction::input_indices_callback(
   // Convert from cloud to pcl_cloud
   boost::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> pcl_cloud = boost::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
   pcl::fromROSMsg(*cloud, *pcl_cloud);
+
+  // Acquire the mutex before accessing the underlying implementation */
+  std::lock_guard<std::mutex> lock(mutex_);
 
   impl_.setInputCloud(pcl_cloud);
   impl_.setIndices(indices_ptr);
