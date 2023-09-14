@@ -58,17 +58,50 @@ namespace sync_policies = message_filters::sync_policies;
   */
 class SACSegmentation : public PCLNode<pcl_msgs::msg::PointIndices>
 {
-  typedef pcl::PointCloud<pcl::PointXYZ> PointCloud;
-  typedef boost::shared_ptr<PointCloud> PointCloudPtr;
-  typedef boost::shared_ptr<const PointCloud> PointCloudConstPtr;
-
 public:
   /** \brief Disallow the empty constructor. */
   SACSegmentation() = delete;
 
-  explicit SACSegmentation(std::string node_name, const rclcpp::NodeOptions & options = rclcpp::NodeOptions())
-  : PCLNode(node_name, options), 
-    min_inliers_(0) {}
+  explicit SACSegmentation(const rclcpp::NodeOptions & options = rclcpp::NodeOptions());
+
+protected:
+  /** \brief Initialize the node's parameters. */
+  void init_parameters();
+
+  /** \brief Lazy transport subscribe routine. */
+  void subscribe();
+
+  /** \brief Lazy transport unsubscribe routine. */
+  void unsubscribe();
+
+  /** \brief Input point cloud callback. Used when \a use_indices is set.
+    * \param cloud the pointer to the input point cloud
+    * \param indices the pointer to the input point cloud indices
+    */
+  void input_indices_callback(
+    const sensor_msgs::msg::PointCloud2::ConstSharedPtr & cloud,
+    const pcl_msgs::msg::PointIndices::ConstSharedPtr & indices);
+
+  /** \brief Indices callback. Used when \a latched_indices_ is set.
+    * \param indices the pointer to the input point cloud indices
+    */
+  inline void
+  indices_callback(const pcl_msgs::msg::PointIndices::ConstSharedPtr & indices)
+  {
+    indices_ = *indices;
+  }
+
+  /** \brief Input callback. Used when \a latched_indices_ is set.
+    * \param input the pointer to the input point cloud
+    */
+  inline void
+  input_callback(const sensor_msgs::msg::PointCloud2::ConstSharedPtr & input)
+  {
+    indices_.header = input->header;
+    pcl_msgs::msg::PointIndices::ConstSharedPtr indices;
+    indices.reset(new PointIndices(indices_));
+    nf_pi_.add(indices);
+  }
 
   /** \brief Set the input TF frame the data should be transformed into before processing,
     * if input.header.frame_id is different.
@@ -87,20 +120,38 @@ public:
   /** \brief Get the TF frame the PointCloud should be transformed into after processing. */
   inline std::string getOutputTFframe() {return tf_output_frame_;}
 
-protected:
-  // The minimum number of inliers a model must have in order to be considered valid.
-  int min_inliers_;
+  /** \brief Parameter callback
+  * \param params parameter values to set
+  */
+  rcl_interfaces::msg::SetParametersResult
+  set_parameters_callback(const std::vector<rclcpp::Parameter> & params);
 
-  // ROS nodelet attributes
+    /** \brief Pointer to parameters callback handle. */
+  OnSetParametersCallbackHandle::SharedPtr set_parameters_callback_handle_;
+
+  /** \brief Internal mutex. */
+  std::mutex mutex_;
+
+  // The minimum number of inliers a model must have in order to be considered valid.
+  int min_inliers_{0};
+
+  /** \brief Set to true if the indices topic is latched.
+   *
+   * If use_indices_ is true, the ~input and ~indices topics generally must
+   * be synchronised in time. By setting this flag to true, the most recent
+   * value from ~indices can be used instead of requiring a synchronised
+   * message.
+   **/
+  bool latched_indices_{false};
+
   /** \brief The output PointIndices publisher. */
-  // TODO: Resove with the publisher in the PCLNode template
-  rclcpp::Publisher<PointIndices>::SharedPtr pub_indices_;
+  rclcpp::Publisher<pcl_msgs::msg::PointIndices>::SharedPtr pub_indices_;
 
   /** \brief The output ModelCoefficients publisher. */
   rclcpp::Publisher<ModelCoefficients>::SharedPtr pub_model_;
 
   /** \brief The input PointCloud subscriber. */
-  rclcpp::Subscription<PointCloud>::SharedPtr sub_input_;
+  rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr sub_input_;
 
   /** \brief The input TF frame the data should be transformed into,
     * if input.header.frame_id is different.
@@ -119,65 +170,19 @@ protected:
     * synchronizer */
   message_filters::PassThrough<pcl_msgs::msg::PointIndices> nf_pi_;
 
-  /** \brief Nodelet initialization routine. */
-  virtual void onInit();
-
-  /** \brief LazyNodelet connection routine. */
-  virtual void subscribe();
-  virtual void unsubscribe();
-
-  /** \brief Dynamic reconfigure callback
-    * \param config the config object
-    * \param level the dynamic reconfigure level
-    */
-  // void set_parameters_callback(SACSegmentationConfig & config, uint32_t level);
-
-  /** \brief Input point cloud callback. Used when \a use_indices is set.
-    * \param cloud the pointer to the input point cloud
-    * \param indices the pointer to the input point cloud indices
-    */
-  void input_indices_callback(
-    const PointCloudConstPtr & cloud,
-    const PointIndicesConstPtr & indices);
-
   /** \brief Pointer to a set of indices stored internally.
    * (used when \a latched_indices_ is set).
    */
-  PointIndices indices_;
+  pcl_msgs::msg::PointIndices indices_;
 
-  /** \brief Indices callback. Used when \a latched_indices_ is set.
-    * \param indices the pointer to the input point cloud indices
-    */
-  inline void
-  indices_callback(const PointIndicesConstPtr & indices)
-  {
-    indices_ = *indices;
-  }
-
-  /** \brief Input callback. Used when \a latched_indices_ is set.
-    * \param input the pointer to the input point cloud
-    */
-  inline void
-  input_callback(const PointCloudConstPtr & input)
-  {
-    indices_.header = fromPCL(input->header);
-    PointIndicesConstPtr indices;
-    indices.reset(new PointIndices(indices_));
-    nf_pi_.add(indices);
-  }
-
-private:
-  /** \brief Internal mutex. */
-  boost::mutex mutex_;
+  /** \brief Synchronized input, and indices.*/
+  boost::shared_ptr<message_filters::Synchronizer<sync_policies::ExactTime<sensor_msgs::msg::PointCloud2,
+    pcl_msgs::msg::PointIndices>>> sync_input_indices_e_;
+  boost::shared_ptr<message_filters::Synchronizer<sync_policies::ApproximateTime<sensor_msgs::msg::PointCloud2,
+    pcl_msgs::msg::PointIndices>>> sync_input_indices_a_;
 
   /** \brief The PCL implementation used. */
   pcl::SACSegmentation<pcl::PointXYZ> impl_;
-
-  /** \brief Synchronized input, and indices.*/
-  boost::shared_ptr<message_filters::Synchronizer<sync_policies::ExactTime<PointCloud,
-    PointIndices>>> sync_input_indices_e_;
-  boost::shared_ptr<message_filters::Synchronizer<sync_policies::ApproximateTime<PointCloud,
-    PointIndices>>> sync_input_indices_a_;
 
 public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW

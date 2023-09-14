@@ -46,22 +46,71 @@
 using pcl_conversions::fromPCL;
 
 //////////////////////////////////////////////////////////////////////////////////////////////
-void
-pcl_ros::SACSegmentation::onInit()
+pcl_ros::SACSegmentation::SACSegmentation(const rclcpp::NodeOptions & options)
+  : PCLNode("SACSegmentationNode", options)
 {
-  // Advertise the output topics
+  init_parameters();
+  subscribe();
+
+  // Create the publishers
   pub_indices_ = create_publisher<PointIndices>("inliers", max_queue_size_);
   pub_model_ = create_publisher<ModelCoefficients>("model", max_queue_size_);
+
+  // Initialize the random number generator
+  srand(time(0));
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////
+void
+pcl_ros::SACSegmentation::init_parameters()
+{
+#if 0
+    # add(self, name, paramtype, level, description, default = None, min = None,
+    # max = None, edit_method = '')
+    gen.add('max_iterations', int_t, 0,
+            'The maximum number of iterations the algorithm will run for',
+            50, 0, 100000)
+    gen.add('probability', double_t, 0,
+            'The desired probability of choosing at least one sample free from outliers',
+            0.99, 0.5, 0.99)
+    gen.add('distance_threshold', double_t, 0,
+            'The distance to model threshold',
+            0.02, 0, 1.0)
+    gen.add('optimize_coefficients', bool_t, 0,
+            'Model coefficient refinement',
+            True)
+    gen.add('radius_min', double_t, 0,
+            'The minimum allowed model radius (where applicable)',
+            0.0, 0, 1.0)
+    gen.add('radius_max', double_t, 0,
+            'The maximum allowed model radius (where applicable)',
+            0.05, 0, 1.0)
+    gen.add('eps_angle', double_t, 0,
+            ('The maximum allowed difference between the model normal '
+             'and the given axis in radians.'),
+            0.17, 0.0, 1.5707)
+    gen.add('min_inliers', int_t, 0,
+            'The minimum number of inliers a model must have in order to be considered valid.',
+            0, 0, 100000)
+    gen.add('input_frame', str_t, 0,
+            ('The input TF frame the data should be transformed into, '
+             'if input.header.frame_id is different.'),
+            '')
+    gen.add('output_frame', str_t, 0,
+            ('The output TF frame the data should be transformed into, '
+             'if input.header.frame_id is different.'),
+            '')
+#endif
 
   // ---[ Mandatory parameters
   int model_type;
   if (get_parameter("model_type", model_type)) {
-    RCLCPP_ERROR(get_logger(), "[onInit] Need a 'model_type' parameter to be set before continuing!");
+    RCLCPP_ERROR(get_logger(), "[init_parameters] Need a 'model_type' parameter to be set before continuing!");
     return;
   }
   double threshold;  // unused - set via dynamic reconfigure in the callback
   if (get_parameter("distance_threshold", threshold)) {
-    RCLCPP_ERROR(get_logger(), "[onInit] Need a 'distance_threshold' parameter to be set before continuing!");
+    RCLCPP_ERROR(get_logger(), "[init_parameters] Need a 'distance_threshold' parameter to be set before continuing!");
     return;
   }
 
@@ -69,9 +118,13 @@ pcl_ros::SACSegmentation::onInit()
   int method_type = 0;
   get_parameter("method_type", method_type);
 
+#if 1
+  std::vector<double> axis_params; //  = double_array_param.as_double_array();
+  get_parameter("axis", axis_params);
+  Eigen::Vector3f axis = Eigen::Vector3f::Zero();
+#else
   XmlRpc::XmlRpcValue axis_param;
   get_parameter("axis", axis_param);
-  Eigen::Vector3f axis = Eigen::Vector3f::Zero();
 
   switch (axis_param.getType()) {
     case XmlRpc::XmlRpcValue::TypeArray:
@@ -79,7 +132,7 @@ pcl_ros::SACSegmentation::onInit()
         if (axis_param.size() != 3) {
           RCLCPP_ERROR(
             get_logger(),
-            "[onInit] Parameter 'axis' given but with a different number of values (%d) "
+            "[init_parameters] Parameter 'axis' given but with a different number of values (%d) "
             "than required (3)!",
             axis_param.size());
           return;
@@ -88,7 +141,7 @@ pcl_ros::SACSegmentation::onInit()
           if (axis_param[i].getType() != XmlRpc::XmlRpcValue::TypeDouble) {
             RCLCPP_ERROR(
               get_logger(),
-              "[onInit] Need floating point values for 'axis' parameter.");
+              "[init_parameters] Need floating point values for 'axis' parameter.");
             return;
           }
           double value = axis_param[i]; axis[i] = value;
@@ -100,26 +153,25 @@ pcl_ros::SACSegmentation::onInit()
         break;
       }
   }
-
-  // Initialize the random number generator
-  srand(time(0));
-
-  RCLCPP_DEBUG(
-    get_logger(),
-    "[onInit] Nodelet successfully created with the following parameters:\n"
-    " - model_type               : %d\n"
-    " - method_type              : %d\n"
-    " - model_threshold          : %f\n"
-    " - axis                     : [%f, %f, %f]\n",
-    model_type, method_type, threshold,
-    axis[0], axis[1], axis[2]);
+#endif
 
   // Set given parameters here
   impl_.setModelType(model_type);
   impl_.setMethodType(method_type);
   impl_.setAxis(axis);
 
-  onInitPostProcess();
+   // Initialize the parameter callback
+  set_parameters_callback_handle_ = add_on_set_parameters_callback(std::bind(&SACSegmentation::set_parameters_callback, this, std::placeholders::_1));
+
+  RCLCPP_DEBUG(
+    get_logger(),
+    "[init_parameters] Node initialized with the following parameters:\n"
+    " - model_type : %d\n"
+    " - method_type : %d\n"
+    " - model_threshold : %f\n"
+    " - axis : [%f, %f, %f]\n",
+    model_type, method_type, threshold,
+    axis[0], axis[1], axis[2]);
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////
@@ -129,8 +181,10 @@ pcl_ros::SACSegmentation::subscribe()
   // If we're supposed to look for PointIndices (indices)
   if (use_indices_) {
     // Subscribe to the input using a filter
-    sub_input_filter_.subscribe(this, "input", max_queue_size_);
-    sub_indices_filter_.subscribe(this, "indices", max_queue_size_);
+    rmw_qos_profile_t custom_qos_profile = rmw_qos_profile_sensor_data;
+    custom_qos_profile.depth = max_queue_size_;
+    sub_input_filter_.subscribe(this, "input", custom_qos_profile);
+    sub_indices_filter_.subscribe(this, "indices", custom_qos_profile);
 
     // when "use_indices" is set to true, and "latched_indices" is set to true,
     // we'll subscribe and get a separate callback for PointIndices that will
@@ -138,47 +192,49 @@ pcl_ros::SACSegmentation::subscribe()
     // will take care of meshing the new PointClouds with the old saved indices.
     if (latched_indices_) {
       // Subscribe to a callback that saves the indices
-      sub_indices_filter_.registerCallback(bind(&SACSegmentation::indices_callback, this, _1));
+      sub_indices_filter_.registerCallback(bind(&SACSegmentation::indices_callback, this, std::placeholders::_1));
       // Subscribe to a callback that sets the header of the saved indices to the cloud header
-      sub_input_filter_.registerCallback(bind(&SACSegmentation::input_callback, this, _1));
+      sub_input_filter_.registerCallback(bind(&SACSegmentation::input_callback, this, std::placeholders::_1));
 
       // Synchronize the two topics. No need for an approximate synchronizer here, as we'll
       // match the timestamps exactly
       sync_input_indices_e_ =
         boost::make_shared<message_filters::Synchronizer<
-            sync_policies::ExactTime<PointCloud, PointIndices>>>(max_queue_size_);
+            sync_policies::ExactTime<sensor_msgs::msg::PointCloud2, pcl_msgs::msg::PointIndices>>>(max_queue_size_);
       sync_input_indices_e_->connectInput(sub_input_filter_, nf_pi_);
       sync_input_indices_e_->registerCallback(
         bind(
           &SACSegmentation::input_indices_callback, this,
-          _1, _2));
+          std::placeholders::_1, std::placeholders::_2));
     } else {  // "latched_indices" not set, proceed with regular <input,indices> pairs
       if (approximate_sync_) {
         sync_input_indices_a_ =
           boost::make_shared<message_filters::Synchronizer<
-              sync_policies::ApproximateTime<PointCloud, PointIndices>>>(max_queue_size_);
+              sync_policies::ApproximateTime<sensor_msgs::msg::PointCloud2, pcl_msgs::msg::PointIndices>>>(max_queue_size_);
         sync_input_indices_a_->connectInput(sub_input_filter_, sub_indices_filter_);
         sync_input_indices_a_->registerCallback(
           bind(
             &SACSegmentation::input_indices_callback, this,
-            _1, _2));
+            std::placeholders::_1, std::placeholders::_2));
       } else {
         sync_input_indices_e_ =
           boost::make_shared<message_filters::Synchronizer<
-              sync_policies::ExactTime<PointCloud, PointIndices>>>(max_queue_size_);
+              sync_policies::ExactTime<sensor_msgs::msg::PointCloud2, pcl_msgs::msg::PointIndices>>>(max_queue_size_);
         sync_input_indices_e_->connectInput(sub_input_filter_, sub_indices_filter_);
         sync_input_indices_e_->registerCallback(
           bind(
             &SACSegmentation::input_indices_callback, this,
-            _1, _2));
+            std::placeholders::_1, std::placeholders::_2));
       }
     }
   } else {
     // Subscribe in an old fashion to input only (no filters)
+#if 0
+    // TODO(mjeronimo)
     sub_input_ =
-      pnh_->subscribe<PointCloud>(
-      "input", max_queue_size_,
-      bind(&SACSegmentation::input_indices_callback, this, _1, PointIndicesConstPtr()));
+      create_subscription<sensor_msgs::msg::PointCloud2>("input", max_queue_size_,
+        std::bind(&pcl_ros::SACSegmentation::input_indices_callback, this, std::placeholders::_1, pcl_msgs::msg::PointIndices::ConstSharedPtr()));
+#endif
   }
 }
 
@@ -190,16 +246,17 @@ pcl_ros::SACSegmentation::unsubscribe()
     sub_input_filter_.unsubscribe();
     sub_indices_filter_.unsubscribe();
   } else {
-    sub_input_.shutdown();
+    sub_input_.reset();
   }
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////
-void
-pcl_ros::SACSegmentation::set_parameters_callback(SACSegmentationConfig & config, uint32_t level)
+rcl_interfaces::msg::SetParametersResult
+pcl_ros::SACSegmentation::set_parameters_callback(const std::vector<rclcpp::Parameter> & /*params*/)
 {
-  boost::mutex::scoped_lock lock(mutex_);
+  std::lock_guard<std::mutex> lock(mutex_);
 
+#if 0
   if (impl_.getDistanceThreshold() != config.distance_threshold) {
     // sac_->setDistanceThreshold (threshold_); - done in initSAC
     impl_.setDistanceThreshold(config.distance_threshold);
@@ -276,20 +333,25 @@ pcl_ros::SACSegmentation::set_parameters_callback(SACSegmentationConfig & config
       tf_output_frame_.c_str());
     RCLCPP_WARN(get_logger(), "output_frame TF not implemented yet!");
   }
+#endif
+
+  rcl_interfaces::msg::SetParametersResult result;
+  result.successful = true;
+  return result;
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////
 void
 pcl_ros::SACSegmentation::input_indices_callback(
-  const PointCloudConstPtr & cloud,
-  const PointIndicesConstPtr & indices)
+  const sensor_msgs::msg::PointCloud2::ConstSharedPtr & cloud,
+  const pcl_msgs::msg::PointIndices::ConstSharedPtr & indices)
 {
-  boost::mutex::scoped_lock lock(mutex_);
+  std::lock_guard<std::mutex> lock(mutex_);
 
   pcl_msgs::msg::PointIndices inliers;
   pcl_msgs::msg::ModelCoefficients model;
   // Enforce that the TF frame and the timestamp are copied
-  inliers.header = model.header = fromPCL(cloud->header);
+  inliers.header = model.header = cloud->header;
 
   // If cloud is given, check if it's valid
   if (!isValid(cloud)) {
@@ -311,29 +373,27 @@ pcl_ros::SACSegmentation::input_indices_callback(
     RCLCPP_DEBUG(
       get_logger(),
       "[input_indices_callback]\n"
-      "                                 - PointCloud with %d data points (%s), stamp %f, and "
-      "frame %s on topic %s received.\n"
-      "                                 - PointIndices with %zu values, stamp %f, and "
-      "frame %s on topic %s received.",
-      cloud->width * cloud->height, pcl::getFieldsList(*cloud).c_str(), fromPCL(
-        cloud->header).stamp.toSec(), cloud->header.frame_id.c_str(), pnh_->resolveName(
-        "input").c_str(),
-      indices->indices.size(), indices->header.stamp.toSec(),
-      indices->header.frame_id.c_str(), pnh_->resolveName("indices").c_str());
+      "  - PointCloud with %d data points (%s), stamp %d.%09d, and frame %s on topic %s received.\n"
+      "  - PointIndices with %zu values, stamp %d.%09d, and frame %s on topic %s received.",
+      cloud->width * cloud->height, pcl::getFieldsList(*cloud).c_str(), 
+      cloud->header.stamp.sec, cloud->header.stamp.nanosec,
+      cloud->header.frame_id.c_str(), "input",
+      indices->indices.size(), 
+      indices->header.stamp.sec, indices->header.stamp.nanosec,
+      indices->header.frame_id.c_str(), "indices");
   } else {
     RCLCPP_DEBUG(
       get_logger(),
-      "[input_indices_callback] PointCloud with %d data points, stamp %f, and "
-      "frame %s on topic %s received.",
-      cloud->width * cloud->height, fromPCL(
-        cloud->header).stamp.toSec(), cloud->header.frame_id.c_str(), pnh_->resolveName(
-        "input").c_str());
+      "[input_indices_callback] PointCloud with %d data points, stamp %d.%09d, and frame %s on topic %s received.",
+      cloud->width * cloud->height, 
+      cloud->header.stamp.sec, cloud->header.stamp.nanosec,
+      cloud->header.frame_id.c_str(), "input");
   }
   ///
 
   // Check whether the user has given a different input TF frame
   tf_input_orig_frame_ = cloud->header.frame_id;
-  PointCloudConstPtr cloud_tf;
+  sensor_msgs::msg::PointCloud2::ConstSharedPtr cloud_tf;
 /*  if (!tf_input_frame_.empty () && cloud->header.frame_id != tf_input_frame_)
   {
     RCLCPP_DEBUG ("[input_callback] Transforming input dataset from %s to %s.",
@@ -354,12 +414,13 @@ pcl_ros::SACSegmentation::input_indices_callback(
     indices_ptr.reset(new std::vector<int>(indices->indices));
   }
 
-  impl_.setInputCloud(pcl_ptr(cloud_tf));
+  // TODO(mjeronimo)
+  //impl_.setInputCloud(pcl_ptr(cloud_tf));
   impl_.setIndices(indices_ptr);
 
   // Final check if the data is empty
   // (remember that indices are set to the size of the data -- if indices* = NULL)
-  if (!cloud->points.empty()) {
+  if (cloud->width && cloud->height) {
     pcl::PointIndices pcl_inliers;
     pcl::ModelCoefficients pcl_model;
     pcl_conversions::moveToPCL(inliers, pcl_inliers);
@@ -378,21 +439,21 @@ pcl_ros::SACSegmentation::input_indices_callback(
   }
 
   // Publish
-  pub_indices_->publish(boost::make_shared<const PointIndices>(inliers));
-  pub_model_->publish(boost::make_shared<const ModelCoefficients>(model));
+  // TODO(mjeronimo)
+  // pub_indices_->publish(std::make_shared<const PointIndices>(inliers));
+  // pub_model_->publish(std::make_shared<const ModelCoefficients>(model));
+
   RCLCPP_DEBUG(
     get_logger(),
     "[input_indices_callback] Published PointIndices with %zu values on topic %s, "
     "and ModelCoefficients with %zu values on topic %s",
-    inliers.indices.size(), pnh_->resolveName("inliers").c_str(),
-    model.values.size(), pnh_->resolveName("model").c_str());
+    inliers.indices.size(), "inliers",
+    model.values.size(), "model");
 
   if (inliers.indices.empty()) {
     RCLCPP_WARN(get_logger(), "[input_indices_callback] No inliers found!");
   }
 }
 
-// typedef pcl_ros::SACSegmentation SACSegmentation;
-// typedef pcl_ros::SACSegmentationFromNormals SACSegmentationFromNormals;
-// PLUGINLIB_EXPORT_CLASS(SACSegmentation, nodelet::Nodelet)
-// PLUGINLIB_EXPORT_CLASS(SACSegmentationFromNormals, nodelet::Nodelet)
+#include "rclcpp_components/register_node_macro.hpp"
+RCLCPP_COMPONENTS_REGISTER_NODE(pcl_ros::SACSegmentation)
