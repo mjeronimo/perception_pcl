@@ -82,11 +82,19 @@ protected:
     const sensor_msgs::msg::PointCloud2::ConstSharedPtr & cloud,
     const pcl_msgs::msg::PointIndices::ConstSharedPtr & indices);
 
+  /** \brief Input point cloud callback. Used when \a use_indices is not set.
+    * \param cloud the pointer to the input point cloud
+    */
+  void input_callback(const sensor_msgs::msg::PointCloud2::ConstSharedPtr & cloud)
+  {
+      input_indices_callback(cloud, pcl_msgs::msg::PointIndices::ConstSharedPtr());
+  }
+
   /** \brief Indices callback. Used when \a latched_indices_ is set.
     * \param indices the pointer to the input point cloud indices
     */
   inline void
-  indices_callback(const pcl_msgs::msg::PointIndices::ConstSharedPtr & indices)
+  latched_indices_callback(const pcl_msgs::msg::PointIndices::ConstSharedPtr & indices)
   {
     indices_ = *indices;
   }
@@ -95,30 +103,13 @@ protected:
     * \param input the pointer to the input point cloud
     */
   inline void
-  input_callback(const sensor_msgs::msg::PointCloud2::ConstSharedPtr & input)
+  latched_input_callback(const sensor_msgs::msg::PointCloud2::ConstSharedPtr & input)
   {
     indices_.header = input->header;
     pcl_msgs::msg::PointIndices::ConstSharedPtr indices;
     indices.reset(new PointIndices(indices_));
     nf_pi_.add(indices);
   }
-
-  /** \brief Set the input TF frame the data should be transformed into before processing,
-    * if input.header.frame_id is different.
-    * \param tf_frame the TF frame the input PointCloud should be transformed into before processing
-    */
-  inline void setInputTFframe(std::string tf_frame) {tf_input_frame_ = tf_frame;}
-
-  /** \brief Get the TF frame the input PointCloud should be transformed into before processing. */
-  inline std::string getInputTFframe() {return tf_input_frame_;}
-
-  /** \brief Set the output TF frame the data should be transformed into after processing.
-    * \param tf_frame the TF frame the PointCloud should be transformed into after processing
-    */
-  inline void setOutputTFframe(std::string tf_frame) {tf_output_frame_ = tf_frame;}
-
-  /** \brief Get the TF frame the PointCloud should be transformed into after processing. */
-  inline std::string getOutputTFframe() {return tf_output_frame_;}
 
   /** \brief Parameter callback
   * \param params parameter values to set
@@ -132,8 +123,19 @@ protected:
   /** \brief Internal mutex. */
   std::mutex mutex_;
 
-  // The minimum number of inliers a model must have in order to be considered valid.
-  int min_inliers_{0};
+  // TODO(mjeronimo): what's the right default?
+  std::vector<double> axis_{0.0, 0.0, 0.0};
+
+  // TODO(mjeronimo): document this
+  double distance_threshold_{0.02};
+
+  /** \brief The maximum allowed difference between the model normal and the given axis _in radians_. */
+  double eps_angle_{0.17};
+
+  /** \brief The input TF frame the data should be transformed into,
+    * if input.header.frame_id is different.
+    */
+  std::string input_frame_;
 
   /** \brief Set to true if the indices topic is latched.
    *
@@ -144,6 +146,35 @@ protected:
    **/
   bool latched_indices_{false};
 
+  // TODO(mjeronimo): document this
+  int max_iterations_{50};
+
+  // TODO(mjeronimo): document this
+  int method_type_{pcl::SAC_RANSAC};
+
+  /** \brief The minimum number of inliers a model must have in order to be considered valid. */
+  int min_inliers_{0};
+
+  // TODO(mjeronimo): document this
+  int model_type_{pcl::SacModel::SACMODEL_PLANE};
+
+  // TODO(mjeronimo): document this
+  bool optimize_coefficients_{true};
+
+  /** \brief The output TF frame the data should be transformed into,
+    * if input.header.frame_id is different.
+    */
+  std::string output_frame_;
+
+  // TODO(mjeronimo): document this
+  double probability_{0.99};
+
+  // TODO(mjeronimo): document this
+  double radius_min_{0.0};
+
+  // TODO(mjeronimo): document this
+  double radius_max_{0.05};
+
   /** \brief The output PointIndices publisher. */
   rclcpp::Publisher<pcl_msgs::msg::PointIndices>::SharedPtr pub_indices_;
 
@@ -152,19 +183,6 @@ protected:
 
   /** \brief The input PointCloud subscriber. */
   rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr sub_input_;
-
-  /** \brief The input TF frame the data should be transformed into,
-    * if input.header.frame_id is different.
-    */
-  std::string tf_input_frame_;
-
-  /** \brief The original data input TF frame. */
-  std::string tf_input_orig_frame_;
-
-  /** \brief The output TF frame the data should be transformed into,
-    * if input.header.frame_id is different.
-    */
-  std::string tf_output_frame_;
 
   /** \brief Null passthrough filter, used for pushing empty elements in the
     * synchronizer */

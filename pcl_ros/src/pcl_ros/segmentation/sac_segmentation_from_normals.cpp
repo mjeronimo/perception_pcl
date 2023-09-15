@@ -115,15 +115,12 @@ pcl_ros::SACSegmentationFromNormals::onInit()
     " - method_type              : %d\n"
     " - model_threshold          : %f\n"
     " - axis                     : [%f, %f, %f]\n",
-    model_type, method_type, threshold,
-    axis[0], axis[1], axis[2]);
+    model_type, method_type, threshold, axis[0], axis[1], axis[2]);
 
   // Set given parameters here
   impl_.setModelType(model_type);
   impl_.setMethodType(method_type);
   impl_.setAxis(axis);
-
-  onInitPostProcess();
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////
