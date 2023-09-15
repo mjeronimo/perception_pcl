@@ -38,11 +38,7 @@
 
 #include <string>
 
-#include "message_filters/pass_through.h"
-#include "message_filters/sync_policies/approximate_time.h"
-#include "message_filters/sync_policies/exact_time.h"
-#include "pcl/segmentation/sac_segmentation.h"
-#include "pcl_ros/pcl_node.hpp"
+#include "pcl_ros/segmentation/sac_segmentation.hpp"
 
 namespace pcl_ros
 {
@@ -54,87 +50,25 @@ namespace sync_policies = message_filters::sync_policies;
   */
 class SACSegmentationFromNormals : public SACSegmentation
 {
-  typedef pcl::PointCloud<pcl::PointXYZ> PointCloud;
-  typedef boost::shared_ptr<PointCloud> PointCloudPtr;
-  typedef boost::shared_ptr<const PointCloud> PointCloudConstPtr;
+public:
+  /** \brief Disallow the empty constructor. */
+  SACSegmentationFromNormals() = delete;
 
+  explicit SACSegmentationFromNormals(const rclcpp::NodeOptions & options = rclcpp::NodeOptions());
+
+protected:
   typedef pcl::PointCloud<pcl::Normal> PointCloudN;
   typedef boost::shared_ptr<PointCloudN> PointCloudNPtr;
   typedef boost::shared_ptr<const PointCloudN> PointCloudNConstPtr;
 
-public:
-  /** \brief Set the input TF frame the data should be transformed into before processing,
-    * if input.header.frame_id is different.
-    * \param tf_frame the TF frame the input PointCloud should be transformed into before processing
-    */
-  inline void setInputTFframe(std::string tf_frame) {tf_input_frame_ = tf_frame;}
+  /** \brief Initialize the node's parameters. */
+  void init_parameters();
 
-  /** \brief Get the TF frame the input PointCloud should be transformed into before processing. */
-  inline std::string getInputTFframe() {return tf_input_frame_;}
+  /** \brief Lazy transport subscribe routine. */
+  void subscribe();
 
-  /** \brief Set the output TF frame the data should be transformed into after processing.
-    * \param tf_frame the TF frame the PointCloud should be transformed into after processing
-    */
-  inline void setOutputTFframe(std::string tf_frame) {tf_output_frame_ = tf_frame;}
-
-  /** \brief Get the TF frame the PointCloud should be transformed into after processing. */
-  inline std::string getOutputTFframe() {return tf_output_frame_;}
-
-protected:
-  // ROS nodelet attributes
-  /** \brief The normals PointCloud subscriber filter. */
-  message_filters::Subscriber<PointCloudN> sub_normals_filter_;
-
-  /** \brief The input PointCloud subscriber. */
-  rclcpp::Subscription<PointCloud>::SharedPtr sub_axis_;
-
-  /** \brief Pointer to a dynamic reconfigure service. */
-  //boost::shared_ptr<dynamic_reconfigure::Server<SACSegmentationFromNormalsConfig>> srv_;
-
-  /** \brief Input point cloud callback.
-    * Because we want to use the same synchronizer object, we push back
-    * empty elements with the same timestamp.
-    */
-  inline void
-  input_callback(const PointCloudConstPtr & cloud)
-  {
-    PointIndices indices;
-    indices.header.stamp = fromPCL(cloud->header).stamp;
-    nf_.add(boost::make_shared<PointIndices>(indices));
-  }
-
-  /** \brief Null passthrough filter, used for pushing empty elements in the
-    * synchronizer */
-  message_filters::PassThrough<PointIndices> nf_;
-
-  /** \brief The input TF frame the data should be transformed into,
-   * if input.header.frame_id is different.
-   */
-  std::string tf_input_frame_;
-  /** \brief The original data input TF frame. */
-  std::string tf_input_orig_frame_;
-  /** \brief The output TF frame the data should be transformed into,
-    * if input.header.frame_id is different.
-    */
-  std::string tf_output_frame_;
-
-  /** \brief Nodelet initialization routine. */
-  virtual void onInit();
-
-  /** \brief LazyNodelet connection routine. */
-  virtual void subscribe();
-  virtual void unsubscribe();
-
-  /** \brief Model callback
-    * \param model the sample consensus model found
-    */
-  void axis_callback(const pcl_msgs::ModelCoefficientsConstPtr & model);
-
-  /** \brief Dynamic reconfigure callback
-    * \param config the config object
-    * \param level the dynamic reconfigure level
-    */
-  void set_parameters_callback(SACSegmentationFromNormalsConfig & config, uint32_t level);
+  /** \brief Lazy transport unsubscribe routine. */
+  void unsubscribe();
 
   /** \brief Input point cloud callback.
     * \param cloud the pointer to the input point cloud
@@ -142,22 +76,69 @@ protected:
     * \param indices the pointer to the input point cloud indices
     */
   void input_normals_indices_callback(
-    const PointCloudConstPtr & cloud,
+    const sensor_msgs::msg::PointCloud2::ConstSharedPtr & cloud,
     const PointCloudNConstPtr & cloud_normals,
-    const PointIndicesConstPtr & indices);
+    const pcl_msgs::msg::PointIndices::ConstSharedPtr & indices);
 
-private:
-  /** \brief Internal mutex. */
-  boost::mutex mutex_;
+  /** \brief Input point cloud callback.
+    * Because we want to use the same synchronizer object, we push back
+    * empty elements with the same timestamp.
+    */
+  inline void
+  input_callback(const sensor_msgs::msg::PointCloud2::ConstSharedPtr & cloud)
+  {
+    pcl_msgs::msg::PointIndices indices;
+    indices.header.stamp = cloud->header.stamp;
+    nf_.add(std::make_shared<pcl_msgs::msg::PointIndices>(indices));
+  }
+
+  /** \brief Model callback
+    * \param model the sample consensus model found
+    */
+  void axis_callback(const pcl_msgs::msg::ModelCoefficients::ConstSharedPtr & model);
+
+  // TODO(mjeronimo): document this one
+  double normal_distance_weight_{0.1};
+
+  /** \brief Parameter callback
+  * \param params parameter values to set
+  */
+  rcl_interfaces::msg::SetParametersResult
+  set_parameters_callback(const std::vector<rclcpp::Parameter> & params);
+
+  /** \brief Pointer to parameters callback handle. */
+  OnSetParametersCallbackHandle::SharedPtr set_parameters_callback_handle_;
+
+  /** \brief The normals PointCloud subscriber filter. */
+  message_filters::Subscriber<PointCloudN> sub_normals_filter_;
+
+  /** \brief The input PointCloud subscriber. */
+  rclcpp::Subscription<pcl_msgs::msg::ModelCoefficients>::SharedPtr sub_axis_;
+
+  /** \brief Null passthrough filter, used for pushing empty elements in the
+    * synchronizer */
+  message_filters::PassThrough<pcl_msgs::msg::PointIndices> nf_;
+
+#if 0
+  /** \brief The input TF frame the data should be transformed into,
+   * if input.header.frame_id is different.
+   */
+  std::string tf_input_frame_;
+
+  /** \brief The output TF frame the data should be transformed into,
+    * if input.header.frame_id is different.
+    */
+  std::string tf_output_frame_;
+#endif
+
+  /** \brief Synchronized input, normals, and indices.*/
+  boost::shared_ptr<message_filters::Synchronizer<sync_policies::ApproximateTime<sensor_msgs::msg::PointCloud2,
+    PointCloudN, pcl_msgs::msg::PointIndices>>> sync_input_normals_indices_a_;
+  boost::shared_ptr<message_filters::Synchronizer<sync_policies::ExactTime<sensor_msgs::msg::PointCloud2, PointCloudN,
+    pcl_msgs::msg::PointIndices>>> sync_input_normals_indices_e_;
 
   /** \brief The PCL implementation used. */
   pcl::SACSegmentationFromNormals<pcl::PointXYZ, pcl::Normal> impl_;
-
-  /** \brief Synchronized input, normals, and indices.*/
-  boost::shared_ptr<message_filters::Synchronizer<sync_policies::ApproximateTime<PointCloud,
-    PointCloudN, PointIndices>>> sync_input_normals_indices_a_;
-  boost::shared_ptr<message_filters::Synchronizer<sync_policies::ExactTime<PointCloud, PointCloudN,
-    PointIndices>>> sync_input_normals_indices_e_;
 
 public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW

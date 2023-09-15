@@ -130,7 +130,7 @@ add_library (pcl_ros_segmentation SHARED
   src/pcl_ros/segmentation/extract_clusters.cpp
   src/pcl_ros/segmentation/extract_polygonal_prism_data.cpp
   src/pcl_ros/segmentation/sac_segmentation.cpp
-#  src/pcl_ros/segmentation/sac_segmentation_from_normals.cpp
+  src/pcl_ros/segmentation/sac_segmentation_from_normals.cpp
   src/pcl_ros/segmentation/segment_differences.cpp
 )
 target_link_libraries(pcl_ros_segmentation pcl_ros_tf ${Boost_LIBRARIES} ${catkin_LIBRARIES} ${PCL_LIBRARIES})
@@ -148,6 +148,14 @@ rclcpp_components_register_node(pcl_ros_segmentation
 rclcpp_components_register_node(pcl_ros_segmentation
     PLUGIN pcl_ros::ExtractPolygonalPrismData
     EXECUTABLE extract_polygonal_prism_data)
+
+rclcpp_components_register_node(pcl_ros_segmentation
+    PLUGIN pcl_ros::SACSegmentation
+    EXECUTABLE sac_segmentation)
+
+rclcpp_components_register_node(pcl_ros_segmentation
+    PLUGIN pcl_ros::SACSegmentationFromNormals
+    EXECUTABLE sac_segmentation_from_normals)
 
 ### Declare the pcl_ros_surface library
 #add_library (pcl_ros_surface
