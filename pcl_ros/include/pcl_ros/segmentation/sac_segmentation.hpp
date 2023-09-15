@@ -123,13 +123,13 @@ protected:
   /** \brief Internal mutex. */
   std::mutex mutex_;
 
-  // TODO(mjeronimo): what's the right default?
+    /** \brief The axis along which we need to search for a model perpendicular to. */
   std::vector<double> axis_{0.0, 0.0, 0.0};
 
-  // TODO(mjeronimo): document this
+  /** \brief Distance to the model threshold (user given parameter). */
   double distance_threshold_{0.02};
 
-  /** \brief The maximum allowed difference between the model normal and the given axis _in radians_. */
+  /** \brief The maximum allowed difference between the model normal and the given axis, _in radians_. */
   double eps_angle_{0.17};
 
   /** \brief The input TF frame the data should be transformed into,
@@ -146,19 +146,19 @@ protected:
    **/
   bool latched_indices_{false};
 
-  // TODO(mjeronimo): document this
+  /** \brief Maximum number of iterations before giving up. */
   int max_iterations_{50};
 
-  // TODO(mjeronimo): document this
+  /** \brief The type of sample consensus method to use. */
   int method_type_{pcl::SAC_RANSAC};
 
   /** \brief The minimum number of inliers a model must have in order to be considered valid. */
   int min_inliers_{0};
 
-  // TODO(mjeronimo): document this
+  /** \brief The type of model to use. */
   int model_type_{pcl::SacModel::SACMODEL_PLANE};
 
-  // TODO(mjeronimo): document this
+  /** \brief Set to true if a coefficient refinement is required. */
   bool optimize_coefficients_{true};
 
   /** \brief The output TF frame the data should be transformed into,
@@ -166,13 +166,13 @@ protected:
     */
   std::string output_frame_;
 
-  // TODO(mjeronimo): document this
+  /** \brief Desired probability of choosing at least one sample free from outliers. */
   double probability_{0.99};
 
-  // TODO(mjeronimo): document this
+  /** \brief The minimum radius limits for the model. Applicable to all models that estimate a radius. */
   double radius_min_{0.0};
 
-  // TODO(mjeronimo): document this
+  /** \brief The maximum radius limits for the model. Applicable to all models that estimate a radius. */
   double radius_max_{0.05};
 
   /** \brief The output PointIndices publisher. */

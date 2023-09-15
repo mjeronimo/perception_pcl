@@ -66,7 +66,7 @@ pcl_ros::SACSegmentation::init_parameters()
   add_parameter(
     "axis",
     rclcpp::ParameterValue(axis_),
-    "TODO(mjeronimo");
+    "The axis along which we need to search for a model perpendicular to");
 
   add_parameter(
     "distance_threshold",
@@ -88,7 +88,7 @@ pcl_ros::SACSegmentation::init_parameters()
   add_parameter(
     "latched_indices",
     rclcpp::ParameterValue(latched_indices_),
-    "TODO(mjeronimo");
+    "Whether to latch the indices values");
 
   add_parameter(
     "max_iterations",
