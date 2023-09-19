@@ -48,8 +48,6 @@ ament_target_dependencies(pcl_ros_tf
   ${dependencies}
 )
 
-### Nodelets
-#
 ### Declare the pcl_ros_io library
 #add_library(pcl_ros_io
 #  src/pcl_ros/io/bag_io.cpp
@@ -60,11 +58,11 @@ ament_target_dependencies(pcl_ros_tf
 #)
 #target_link_libraries(pcl_ros_io pcl_ros_tf ${Boost_LIBRARIES} ${catkin_LIBRARIES} ${PCL_LIBRARIES})
 #class_loader_hide_library_symbols(pcl_ros_io)
-#
-### Declare the pcl_ros_features library
-#add_library(pcl_ros_features
-#  src/pcl_ros/features/feature.cpp
-#  # Compilation is much faster if we include all the following CPP files in feature.cpp
+
+## Declare the pcl_ros_features library
+add_library(pcl_ros_features SHARED
+  src/pcl_ros/features/feature.cpp
+  # Compilation is much faster if we include all the following CPP files in feature.cpp
 #  src/pcl_ros/features/boundary.cpp
 #  src/pcl_ros/features/fpfh.cpp
 #  src/pcl_ros/features/fpfh_omp.cpp
@@ -73,16 +71,16 @@ ament_target_dependencies(pcl_ros_tf
 #  src/pcl_ros/features/moment_invariants.cpp
 #  src/pcl_ros/features/normal_3d.cpp
 #  src/pcl_ros/features/normal_3d_omp.cpp
+#  src/pcl_ros/features/normal_3d_tbb.cpp
 #  src/pcl_ros/features/pfh.cpp
 #  src/pcl_ros/features/principal_curvatures.cpp
 #  src/pcl_ros/features/vfh.cpp
-#)
-#target_link_libraries (pcl_ros_features ${Boost_LIBRARIES} ${catkin_LIBRARIES} ${PCL_LIBRARIES})
-#add_dependencies(pcl_ros_features ${PROJECT_NAME}_gencfg)
-#class_loader_hide_library_symbols(pcl_ros_features)
-#
-#
-### Declare the pcl_ros_filters library
+)
+target_link_libraries(pcl_ros_features pcl_ros_tf ${PCL_LIBRARIES})
+ament_target_dependencies(pcl_ros_features ${dependencies})
+class_loader_hide_library_symbols(pcl_ros_features)
+
+## Declare the pcl_ros_filters library
 add_library(pcl_ros_filters SHARED
   src/pcl_ros/filters/extract_indices.cpp
   src/pcl_ros/filters/filter.cpp
@@ -125,7 +123,7 @@ rclcpp_components_register_node(pcl_ros_filters
 )
 class_loader_hide_library_symbols(pcl_ros_filters)
 
-### Declare the pcl_ros_segmentation library
+## Declare the pcl_ros_segmentation library
 add_library (pcl_ros_segmentation SHARED
   src/pcl_ros/segmentation/extract_clusters.cpp
   src/pcl_ros/segmentation/extract_polygonal_prism_data.cpp
@@ -133,7 +131,7 @@ add_library (pcl_ros_segmentation SHARED
   src/pcl_ros/segmentation/sac_segmentation_from_normals.cpp
   src/pcl_ros/segmentation/segment_differences.cpp
 )
-target_link_libraries(pcl_ros_segmentation pcl_ros_tf ${Boost_LIBRARIES} ${catkin_LIBRARIES} ${PCL_LIBRARIES})
+target_link_libraries(pcl_ros_segmentation pcl_ros_tf ${PCL_LIBRARIES})
 ament_target_dependencies(pcl_ros_segmentation ${dependencies})
 class_loader_hide_library_symbols(pcl_ros_segmentation)
 
@@ -157,7 +155,7 @@ rclcpp_components_register_node(pcl_ros_segmentation
     PLUGIN pcl_ros::SACSegmentationFromNormals
     EXECUTABLE sac_segmentation_from_normals)
 
-### Declare the pcl_ros_surface library
+## Declare the pcl_ros_surface library
 #add_library (pcl_ros_surface
 #  src/pcl_ros/surface/surface.cpp
 #  # Compilation is much faster if we include all the following CPP files in surface.cpp
@@ -167,9 +165,9 @@ rclcpp_components_register_node(pcl_ros_segmentation
 #target_link_libraries(pcl_ros_surface ${Boost_LIBRARIES} ${catkin_LIBRARIES} ${PCL_LIBRARIES})
 #add_dependencies(pcl_ros_surface ${PROJECT_NAME}_gencfg)
 #class_loader_hide_library_symbols(pcl_ros_surface)
-#
-### Tools
-#
+
+## Tools
+
 add_library(pcd_to_pointcloud_lib SHARED tools/pcd_to_pointcloud.cpp)
 target_link_libraries(pcd_to_pointcloud_lib
   ${PCL_LIBRARIES})
@@ -183,21 +181,21 @@ ament_target_dependencies(pcd_to_pointcloud_lib
 rclcpp_components_register_node(pcd_to_pointcloud_lib
   PLUGIN "pcl_ros::PCDPublisher"
   EXECUTABLE pcd_to_pointcloud)
-#
+
 #add_executable(pointcloud_to_pcd tools/pointcloud_to_pcd.cpp)
 #target_link_libraries(pointcloud_to_pcd ${Boost_LIBRARIES} ${catkin_LIBRARIES} ${PCL_LIBRARIES})
-#
+
 #add_executable(bag_to_pcd tools/bag_to_pcd.cpp)
 #target_link_libraries(bag_to_pcd pcl_ros_tf ${Boost_LIBRARIES} ${catkin_LIBRARIES} ${PCL_LIBRARIES})
-#
+
 #add_executable(convert_pcd_to_image tools/convert_pcd_to_image.cpp)
 #target_link_libraries(convert_pcd_to_image ${Boost_LIBRARIES} ${catkin_LIBRARIES} ${PCL_LIBRARIES})
-#
+
 #add_executable(convert_pointcloud_to_image tools/convert_pointcloud_to_image.cpp)
 #target_link_libraries(convert_pointcloud_to_image ${Boost_LIBRARIES} ${catkin_LIBRARIES} ${PCL_LIBRARIES})
-#
-### Downloads
-#
+
+## Downloads
+
 #catkin_download(table_scene_lms400.pcd http://download.ros.org/data/pcl/table_scene_lms400.pcd
 #  DESTINATION ${CMAKE_CURRENT_SOURCE_DIR}/samples/data
 #  MD5 546b5b4822fb1de21b0cf83d41ad6683
@@ -224,7 +222,6 @@ if(BUILD_TESTING)
   #add_rostest(samples/pcl_ros/surface/sample_convex_hull.launch ARGS gui:=false)
 endif()
 
-
 install(
   DIRECTORY include/
   DESTINATION include/${PROJECT_NAME}
@@ -234,11 +231,11 @@ install(
   TARGETS
     pcl_ros_tf
     pcd_to_pointcloud_lib
-#    pcl_ros_io
-#    pcl_ros_features
+    pcl_ros_features
     pcl_ros_filters
-#    pcl_ros_surface
     pcl_ros_segmentation
+#    pcl_ros_io
+#    pcl_ros_surface
 #    pointcloud_to_pcd
 #    bag_to_pcd
 #    convert_pcd_to_image
@@ -258,7 +255,5 @@ ament_export_libraries(pcl_ros_tf)
 
 # Export modern CMake targets
 ament_export_targets(export_pcl_ros HAS_LIBRARY_TARGET)
-
 ament_export_dependencies(${dependencies})
-
 ament_package()

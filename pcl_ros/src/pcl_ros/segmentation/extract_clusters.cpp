@@ -249,6 +249,7 @@ pcl_ros::EuclideanClusterExtraction::input_indices_callback(
     RCLCPP_ERROR(get_logger(), "[input_indices_callback] Invalid input!");
     return;
   }
+
   // If indices are given, check if they are valid
   if (indices && !isValid(indices)) {
     RCLCPP_ERROR(get_logger(), "[input_indices_callback] Invalid indices!");
