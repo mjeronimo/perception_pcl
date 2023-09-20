@@ -54,7 +54,7 @@ pcl_ros::SegmentDifferences::init_parameters()
   add_parameter(
       "distance_threshold",
       rclcpp::ParameterValue(distance_threshold_),
-      floating_point_range{0.0, 2.0, 0.0}, // from, to, step
+      floating_point_range{0.0, 2.0, 0.0},  // from, to, step
       "The distance tolerance as a measure in the L2 Euclidean space between corresponding points");
 
   distance_threshold_ = get_parameter("distance_threshold").as_double();

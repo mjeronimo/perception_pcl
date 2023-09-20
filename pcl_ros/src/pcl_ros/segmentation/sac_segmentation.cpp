@@ -71,13 +71,13 @@ pcl_ros::SACSegmentation::init_parameters()
   add_parameter(
     "distance_threshold",
     rclcpp::ParameterValue(distance_threshold_),
-    floating_point_range{0.0, 1.0, 0.0}, // from, to, step
+    floating_point_range{0.0, 1.0, 0.0},  // from, to, step
     "The distance to model threshold");
 
   add_parameter(
     "eps_angle",
     rclcpp::ParameterValue(eps_angle_),
-    floating_point_range{0.0, 1.5707, 0.0}, // from, to, step
+    floating_point_range{0.0, 1.5707, 0.0},  // from, to, step
     "The maximum allowed difference between the model normal and the given axis in radians");
 
   add_parameter(
@@ -93,7 +93,7 @@ pcl_ros::SACSegmentation::init_parameters()
   add_parameter(
     "max_iterations",
     rclcpp::ParameterValue(max_iterations_),
-    integer_range{0, 100000, 0}, // from, to, step
+    integer_range{0, 100000, 0},  // from, to, step
     "The maximum number of iterations the algorithm will run for");
 
   add_parameter(
@@ -104,7 +104,7 @@ pcl_ros::SACSegmentation::init_parameters()
   add_parameter(
     "min_inliers",
     rclcpp::ParameterValue(min_inliers_),
-    integer_range{0, 100000, 0}, // from, to, step
+    integer_range{0, 100000, 0},  // from, to, step
     "The minimum number of inliers a model must have in order to be considered valid");
 
   add_parameter(
@@ -125,19 +125,19 @@ pcl_ros::SACSegmentation::init_parameters()
   add_parameter(
     "probability",
     rclcpp::ParameterValue(probability_),
-    floating_point_range{0.5, 0.99, 0.0}, // from, to, step
+    floating_point_range{0.5, 0.99, 0.0},  // from, to, step
     "The desired probability of choosing at least one sample free from outliers");
 
   add_parameter(
     "radius_max",
     rclcpp::ParameterValue(radius_max_),
-    floating_point_range{0.0, 1.0, 0.0}, // from, to, step
+    floating_point_range{0.0, 1.0, 0.0},  // from, to, step
     "The maximum allowed model radius (where applicable)");
 
   add_parameter(
     "radius_min",
     rclcpp::ParameterValue(radius_min_),
-    floating_point_range{0.0, 1.0, 0.0}, // from, to, step
+    floating_point_range{0.0, 1.0, 0.0},  // from, to, step
     "The minimum allowed model radius (where applicable)");
 
   // Get the current parameter values
@@ -194,14 +194,14 @@ pcl_ros::SACSegmentation::init_parameters()
     " - radius_min : %f\n"
     " - radius_max : %f\n",
     axis_[0], axis_[1], axis_[2],
-    distance_threshold_, 
+    distance_threshold_,
     eps_angle_,
     input_frame_.c_str(),
     latched_indices_? "true" : "false",
     max_iterations_,
-    method_type_, 
+    method_type_,
     min_inliers_,
-    model_type_, 
+    model_type_,
     optimize_coefficients_? "true" : "false",
     output_frame_.c_str(),
     probability_,
@@ -450,17 +450,17 @@ pcl_ros::SACSegmentation::input_indices_callback(
       "[input_indices_callback]\n"
       "  - PointCloud with %d data points (%s), stamp %d.%09d, and frame %s on topic %s received.\n"
       "  - PointIndices with %zu values, stamp %d.%09d, and frame %s on topic %s received",
-      cloud->width * cloud->height, pcl::getFieldsList(*cloud).c_str(), 
+      cloud->width * cloud->height, pcl::getFieldsList(*cloud).c_str(),
       cloud->header.stamp.sec, cloud->header.stamp.nanosec,
       cloud->header.frame_id.c_str(), "input",
-      indices->indices.size(), 
+      indices->indices.size(),
       indices->header.stamp.sec, indices->header.stamp.nanosec,
       indices->header.frame_id.c_str(), "indices");
   } else {
     RCLCPP_DEBUG(
       get_logger(),
       "[input_indices_callback] PointCloud with %d data points, stamp %d.%09d, and frame %s on topic %s received",
-      cloud->width * cloud->height, 
+      cloud->width * cloud->height,
       cloud->header.stamp.sec, cloud->header.stamp.nanosec,
       cloud->header.frame_id.c_str(), "input");
   }

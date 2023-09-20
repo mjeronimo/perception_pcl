@@ -59,7 +59,7 @@ pcl_ros::SACSegmentationFromNormals::init_parameters()
   add_parameter(
     "normal_distance_weight",
     rclcpp::ParameterValue(normal_distance_weight_),
-    floating_point_range{0.0, 1.0, 0.0}, // from, to, step
+    floating_point_range{0.0, 1.0, 0.0},  // from, to, step
     "The relative weight (between 0 and 1) to give to the angular distance (0 to pi/2) between point normals and the plane normal");
 
   double normal_distance_weight_ = get_parameter("normal_distance_weight").as_double();
@@ -88,18 +88,18 @@ pcl_ros::SACSegmentationFromNormals::subscribe()
 
   // Subscribe to an axis direction along which the model search is to be constrained (the first
   // 3 model coefficients will be checked)
-  sub_axis_ = 
-    create_subscription<pcl_msgs::msg::ModelCoefficients>("axis", 1, 
+  sub_axis_ =
+    create_subscription<pcl_msgs::msg::ModelCoefficients>("axis", 1,
       std::bind(&pcl_ros::SACSegmentationFromNormals::axis_callback, this, std::placeholders::_1));
 
   if (approximate_sync_) {
     sync_input_normals_indices_a_ =
       boost::make_shared<message_filters::Synchronizer<
-          sync_policies::ApproximateTime<sensor_msgs::msg::PointCloud2, PointCloudN, pcl_msgs::msg::PointIndices>>>(max_queue_size_);
+          sync_policies::ApproximateTime<sensor_msgs::msg::PointCloud2, sensor_msgs::msg::PointCloud2, pcl_msgs::msg::PointIndices>>>(max_queue_size_);
   } else {
     sync_input_normals_indices_e_ =
       boost::make_shared<message_filters::Synchronizer<
-          sync_policies::ExactTime<sensor_msgs::msg::PointCloud2, PointCloudN, pcl_msgs::msg::PointIndices>>>(max_queue_size_);
+          sync_policies::ExactTime<sensor_msgs::msg::PointCloud2, sensor_msgs::msg::PointCloud2, pcl_msgs::msg::PointIndices>>>(max_queue_size_);
   }
 
   // If we're supposed to look for PointIndices (indices)
@@ -115,7 +115,6 @@ pcl_ros::SACSegmentationFromNormals::subscribe()
       sync_input_normals_indices_e_->connectInput(sub_input_filter_, sub_normals_filter_, sub_indices_filter_);
     }
   } else {
-#if 0
     // Create a different callback for copying over the timestamp to fake indices
     sub_input_filter_.registerCallback(bind(&SACSegmentationFromNormals::input_callback, this, _1));
 
@@ -126,17 +125,13 @@ pcl_ros::SACSegmentationFromNormals::subscribe()
     }
   }
 
+  // Register callbacks
   if (approximate_sync_) {
     sync_input_normals_indices_a_->registerCallback(
-      bind(
-        &SACSegmentationFromNormals::
-        input_normals_indices_callback, this, _1, _2, _3));
+      bind(&SACSegmentationFromNormals::input_normals_indices_callback, this, _1, _2, _3));
   } else {
     sync_input_normals_indices_e_->registerCallback(
-      bind(
-        &SACSegmentationFromNormals::
-        input_normals_indices_callback, this, _1, _2, _3));
-#endif
+      bind(&SACSegmentationFromNormals::input_normals_indices_callback, this, _1, _2, _3));
   }
 }
 
@@ -208,7 +203,7 @@ pcl_ros::SACSegmentationFromNormals::set_parameters_callback(
 void
 pcl_ros::SACSegmentationFromNormals::input_normals_indices_callback(
   const sensor_msgs::msg::PointCloud2::ConstSharedPtr & cloud,
-  const PointCloudNConstPtr & cloud_normals,
+  const sensor_msgs::msg::PointCloud2::ConstSharedPtr & cloud_normals,
   const pcl_msgs::msg::PointIndices::ConstSharedPtr & indices
 )
 {
@@ -244,37 +239,33 @@ pcl_ros::SACSegmentationFromNormals::input_normals_indices_callback(
 
   /// DEBUG
   if (indices && !indices->header.frame_id.empty()) {
-#if 0
     RCLCPP_DEBUG(
       get_logger(),
       "[input_normals_indices_callback]\n"
       "  - PointCloud with %d data points (%s), stamp %d.%09d, and frame %s on topic %s received.\n"
       "  - PointCloud with %d data points (%s), stamp %d.%09d, and frame %s on topic %s received.\n"
       "  - PointIndices with %zu values, stamp %d.%09d, and frame %s on topic %s received.",
-      cloud->width * cloud->height, pcl::getFieldsList(*cloud).c_str(), 
+      cloud->width * cloud->height, pcl::getFieldsList(*cloud).c_str(),
       cloud->header.stamp.sec, cloud->header.stamp.nanosec,
       cloud->header.frame_id.c_str(), "input",
-      cloud_normals->width * cloud_normals->height, pcl::getFieldsList(*cloud_normals).c_str(), 
+      cloud_normals->width * cloud_normals->height, pcl::getFieldsList(*cloud_normals).c_str(),
       cloud_normals->header.stamp.sec, cloud_normals->header.stamp.nanosec,
       cloud_normals->header.frame_id.c_str(), "normals",
-      indices->indices.size(), 
+      indices->indices.size(),
       indices->header.stamp.sec, indices->header.stamp.nanosec,
       indices->header.frame_id.c_str(), "indices");
-#endif
   } else {
-#if 0
     RCLCPP_DEBUG(
       get_logger(),
       "[input_normals_indices_callback]\n"
-      "  - PointCloud with %d data points (%s), stamp %f, and frame %s on topic %s received.\n"
-      "  - PointCloud with %d data points (%s), stamp %f, and frame %s on topic %s received.",
-      cloud->width * cloud->height, pcl::getFieldsList(*cloud).c_str(), 
-      cloud->header.stamp.toSec(),
+      "  - PointCloud with %d data points (%s), stamp %d.%09d, and frame %s on topic %s received.\n"
+      "  - PointCloud with %d data points (%s), stamp %d.%09d, and frame %s on topic %s received.",
+      cloud->width * cloud->height, pcl::getFieldsList(*cloud).c_str(),
+      cloud->header.stamp.sec, cloud->header.stamp.nanosec,
       cloud->header.frame_id.c_str(), "input",
       cloud_normals->width * cloud_normals->height, pcl::getFieldsList(*cloud_normals).c_str(),
-      cloud_normals->header).stamp.toSec(),
+      cloud_normals->header.stamp.sec, cloud_normals->header.stamp.nanosec,
       cloud_normals->header.frame_id.c_str(), "normals");
-#endif
   }
   ///
 
@@ -293,9 +284,13 @@ pcl_ros::SACSegmentationFromNormals::input_normals_indices_callback(
     return;
   }
 
-  // TODO(mjeronimo)
-  // impl_.setInputCloud(pcl_ptr(cloud));
-  // impl_.setInputNormals(pcl_ptr(cloud_normals));
+  boost::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> pcl_cloud = boost::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
+  pcl::fromROSMsg(*cloud, *pcl_cloud);
+  impl_.setInputCloud(pcl_cloud);
+
+  boost::shared_ptr<pcl::PointCloud<pcl::Normal>> pcl_cloud_normals = boost::make_shared<pcl::PointCloud<pcl::Normal>>();
+  pcl::fromROSMsg(*cloud_normals, *pcl_cloud_normals);
+  impl_.setInputNormals(pcl_cloud_normals);
 
   IndicesPtr indices_ptr;
   if (indices && !indices->header.frame_id.empty()) {
@@ -306,17 +301,16 @@ pcl_ros::SACSegmentationFromNormals::input_normals_indices_callback(
 
   // Final check if the data is empty
   // (remember that indices are set to the size of the data -- if indices* = NULL)
-#if 0
-  if (!cloud->points.empty()) {
+  if (!cloud->width || !cloud->height) {
     pcl::PointIndices pcl_inliers;
     pcl::ModelCoefficients pcl_model;
+
     pcl_conversions::moveToPCL(inliers, pcl_inliers);
     pcl_conversions::moveToPCL(model, pcl_model);
     impl_.segment(pcl_inliers, pcl_model);
     pcl_conversions::moveFromPCL(pcl_inliers, inliers);
     pcl_conversions::moveFromPCL(pcl_model, model);
   }
-#endif
 
   // Check if we have enough inliers, clear inliers + model if not
   if (static_cast<int>(inliers.indices.size()) <= min_inliers_) {

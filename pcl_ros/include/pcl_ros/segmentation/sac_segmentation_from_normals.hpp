@@ -57,9 +57,9 @@ public:
   explicit SACSegmentationFromNormals(const rclcpp::NodeOptions & options = rclcpp::NodeOptions());
 
 protected:
-  typedef pcl::PointCloud<pcl::Normal> PointCloudN;
-  typedef boost::shared_ptr<PointCloudN> PointCloudNPtr;
-  typedef boost::shared_ptr<const PointCloudN> PointCloudNConstPtr;
+  // typedef pcl::PointCloud<pcl::Normal> PointCloudN;
+  // typedef boost::shared_ptr<PointCloudN> PointCloudNPtr;
+  // typedef boost::shared_ptr<const PointCloudN> PointCloudNConstPtr;
 
   /** \brief Initialize the node's parameters. */
   void init_parameters();
@@ -77,7 +77,7 @@ protected:
     */
   void input_normals_indices_callback(
     const sensor_msgs::msg::PointCloud2::ConstSharedPtr & cloud,
-    const PointCloudNConstPtr & cloud_normals,
+    const sensor_msgs::msg::PointCloud2::ConstSharedPtr & cloud_normals,
     const pcl_msgs::msg::PointIndices::ConstSharedPtr & indices);
 
   /** \brief Input point cloud callback.
@@ -110,7 +110,7 @@ protected:
   OnSetParametersCallbackHandle::SharedPtr set_parameters_callback_handle_;
 
   /** \brief The normals PointCloud subscriber filter. */
-  message_filters::Subscriber<PointCloudN> sub_normals_filter_;
+  message_filters::Subscriber<sensor_msgs::msg::PointCloud2> sub_normals_filter_;
 
   /** \brief The input PointCloud subscriber. */
   rclcpp::Subscription<pcl_msgs::msg::ModelCoefficients>::SharedPtr sub_axis_;
@@ -119,23 +119,11 @@ protected:
     * synchronizer */
   message_filters::PassThrough<pcl_msgs::msg::PointIndices> nf_;
 
-#if 0
-  /** \brief The input TF frame the data should be transformed into,
-   * if input.header.frame_id is different.
-   */
-  std::string tf_input_frame_;
-
-  /** \brief The output TF frame the data should be transformed into,
-    * if input.header.frame_id is different.
-    */
-  std::string tf_output_frame_;
-#endif
-
   /** \brief Synchronized input, normals, and indices.*/
   boost::shared_ptr<message_filters::Synchronizer<sync_policies::ApproximateTime<sensor_msgs::msg::PointCloud2,
-    PointCloudN, pcl_msgs::msg::PointIndices>>> sync_input_normals_indices_a_;
-  boost::shared_ptr<message_filters::Synchronizer<sync_policies::ExactTime<sensor_msgs::msg::PointCloud2, PointCloudN,
-    pcl_msgs::msg::PointIndices>>> sync_input_normals_indices_e_;
+    sensor_msgs::msg::PointCloud2, pcl_msgs::msg::PointIndices>>> sync_input_normals_indices_a_;
+  boost::shared_ptr<message_filters::Synchronizer<sync_policies::ExactTime<sensor_msgs::msg::PointCloud2,
+    sensor_msgs::msg::PointCloud2, pcl_msgs::msg::PointIndices>>> sync_input_normals_indices_e_;
 
   /** \brief The PCL implementation used. */
   pcl::SACSegmentationFromNormals<pcl::PointXYZ, pcl::Normal> impl_;

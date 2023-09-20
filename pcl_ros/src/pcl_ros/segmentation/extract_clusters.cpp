@@ -81,7 +81,7 @@ pcl_ros::EuclideanClusterExtraction::init_parameters()
     rclcpp::ParameterValue(max_clusters_),
     integer_range{1, 2147483647, 0},  // from, to, step
     "The maximum number of clusters to extract");
-  
+
   add_parameter(
     "publish_indices",
     rclcpp::ParameterValue(publish_indices_),
@@ -115,7 +115,7 @@ pcl_ros::EuclideanClusterExtraction::init_parameters()
     " - cluster_min_size : %d\n"
     " - cluster_max_size : %d\n"
     " - max_clusters : %d\n"
-    " - publish_indices : %s\n", 
+    " - publish_indices : %s\n",
     cluster_tolerance_, cluster_min_size_, cluster_max_size_, max_clusters_, publish_indices_? "true" : "false");
 }
 
