@@ -64,7 +64,10 @@ public:
   /** \brief Disallow the empty constructor. */
   Feature() = delete;
 
-  /** \brief Empty constructor. */
+  /** \brief Feature constructor
+    * \param node_name node name
+    * \param options node options
+    */
   explicit Feature(const std::string & node_name, const rclcpp::NodeOptions & options = rclcpp::NodeOptions());
 
 protected:

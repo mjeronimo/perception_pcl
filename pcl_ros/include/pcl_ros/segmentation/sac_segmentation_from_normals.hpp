@@ -54,6 +54,9 @@ public:
   /** \brief Disallow the empty constructor. */
   SACSegmentationFromNormals() = delete;
 
+  /** \brief SACSegmentationFromNormals constructor
+    * \param options node options
+    */
   explicit SACSegmentationFromNormals(const rclcpp::NodeOptions & options = rclcpp::NodeOptions());
 
 protected:

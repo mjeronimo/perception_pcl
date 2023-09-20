@@ -62,6 +62,9 @@ public:
   /** \brief Disallow the empty constructor. */
   SACSegmentation() = delete;
 
+  /** \brief SACSegmentation constructor
+    * \param options node options
+    */
   explicit SACSegmentation(const rclcpp::NodeOptions & options = rclcpp::NodeOptions());
 
 protected:

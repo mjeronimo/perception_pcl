@@ -35,40 +35,55 @@
  *
  */
 
-#include <pluginlib/class_list_macros.h>
 #include "pcl_ros/features/normal_3d.hpp"
 
+
 void
-pcl_ros::NormalEstimation::emptyPublish(const PointCloudInConstPtr & cloud)
+pcl_ros::NormalEstimation::emptyPublish(const sensor_msgs::msg::PointCloud2::ConstSharedPtr & cloud)
 {
-  PointCloudOut output;
+  sensor_msgs::msg::PointCloud2 output;
   output.header = cloud->header;
-  pub_output_.publish(ros_ptr(output.makeShared()));
+  pub_output_->publish(output);
 }
 
 void
 pcl_ros::NormalEstimation::computePublish(
-  const PointCloudInConstPtr & cloud,
-  const PointCloudInConstPtr & surface,
+  const sensor_msgs::msg::PointCloud2::ConstSharedPtr & cloud,
+  const sensor_msgs::msg::PointCloud2::ConstSharedPtr & surface,
   const IndicesPtr & indices)
 {
   // Set the parameters
   impl_.setKSearch(k_);
   impl_.setRadiusSearch(search_radius_);
 
-  // Set the inputs
-  impl_.setInputCloud(pcl_ptr(cloud));
-  impl_.setIndices(indices);
-  impl_.setSearchSurface(pcl_ptr(surface));
-  // Estimate the feature
-  PointCloudOut output;
-  impl_.compute(output);
+  // Convert from cloud to pcl_cloud
+  boost::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> pcl_cloud = boost::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
+  pcl::fromROSMsg(*cloud, *pcl_cloud);
 
-  // Publish a Boost shared ptr const data
+  // Convert from surface to pcl_surface
+  boost::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> pcl_surface = boost::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
+  pcl::fromROSMsg(*surface, *pcl_surface);
+
+  // Set the inputs
+  impl_.setInputCloud(pcl_cloud);
+  impl_.setIndices(indices);
+  impl_.setSearchSurface(pcl_surface);
+
+  // Compute the normals
+  pcl::PointCloud<pcl::Normal> normals;
+  impl_.compute(normals);
+
+  // Convert to a ROS message for publishing
+  sensor_msgs::msg::PointCloud2 output;
+  pcl::toROSMsg(normals, output);
+
   // Enforce that the TF frame and the timestamp are copied
   output.header = cloud->header;
-  pub_output_.publish(ros_ptr(output.makeShared()));
+
+  // Publish
+  pub_output_->publish(output);
 }
 
-typedef pcl_ros::NormalEstimation NormalEstimation;
-PLUGINLIB_EXPORT_CLASS(NormalEstimation, nodelet::Nodelet)
+#include "rclcpp_components/register_node_macro.hpp"
+RCLCPP_COMPONENTS_REGISTER_NODE(pcl_ros::NormalEstimation)
+

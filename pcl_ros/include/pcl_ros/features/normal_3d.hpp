@@ -38,8 +38,8 @@
 #ifndef PCL_ROS__FEATURES__NORMAL_3D_HPP_
 #define PCL_ROS__FEATURES__NORMAL_3D_HPP_
 
-#include <pcl/features/normal_3d.h>
 #include "pcl_ros/features/feature.hpp"
+#include "pcl/features/normal_3d.h"
 
 namespace pcl_ros
 {
@@ -52,35 +52,34 @@ namespace pcl_ros
   */
 class NormalEstimation : public Feature
 {
+public:
+ /** \brief Disallow the empty constructor. */
+  NormalEstimation() = delete;
+
+  /** \brief Constructor. */
+  explicit NormalEstimation(const rclcpp::NodeOptions & options = rclcpp::NodeOptions())
+  : Feature("NormalEstimationNode", options) {}
+
 private:
   /** \brief PCL implementation object. */
   pcl::NormalEstimation<pcl::PointXYZ, pcl::Normal> impl_;
 
-  typedef pcl::PointCloud<pcl::Normal> PointCloudOut;
-
-  /** \brief Child initialization routine. Internal method. */
-  inline bool
-  childInit(ros::NodeHandle & nh)
-  {
-    // Create the output publisher
-    pub_output_ = advertise<PointCloudOut>(nh, "output", max_queue_size_);
-    return true;
-  }
-
   /** \brief Publish an empty point cloud of the feature output type.
     * \param cloud the input point cloud to copy the header from.
     */
-  void emptyPublish(const PointCloudInConstPtr & cloud);
+  void emptyPublish(const sensor_msgs::msg::PointCloud2::ConstSharedPtr & cloud);
 
   /** \brief Compute the feature and publish it. */
   void computePublish(
-    const PointCloudInConstPtr & cloud,
-    const PointCloudInConstPtr & surface,
+    const sensor_msgs::msg::PointCloud2::ConstSharedPtr & cloud,
+    const sensor_msgs::msg::PointCloud2::ConstSharedPtr & surface,
     const IndicesPtr & indices);
 
 public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
 };
+
 }  // namespace pcl_ros
 
 #endif  // PCL_ROS__FEATURES__NORMAL_3D_HPP_

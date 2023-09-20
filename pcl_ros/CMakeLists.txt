@@ -69,7 +69,7 @@ add_library(pcl_ros_features SHARED
 #  src/pcl_ros/features/shot.cpp
 #  src/pcl_ros/features/shot_omp.cpp
 #  src/pcl_ros/features/moment_invariants.cpp
-#  src/pcl_ros/features/normal_3d.cpp
+  src/pcl_ros/features/normal_3d.cpp
 #  src/pcl_ros/features/normal_3d_omp.cpp
 #  src/pcl_ros/features/normal_3d_tbb.cpp
 #  src/pcl_ros/features/pfh.cpp
@@ -79,6 +79,11 @@ add_library(pcl_ros_features SHARED
 target_link_libraries(pcl_ros_features pcl_ros_tf ${PCL_LIBRARIES})
 ament_target_dependencies(pcl_ros_features ${dependencies})
 class_loader_hide_library_symbols(pcl_ros_features)
+
+rclcpp_components_register_node(pcl_ros_filters
+  PLUGIN "pcl_ros::NormalEstimation"
+  EXECUTABLE normal_estimation
+)
 
 ## Declare the pcl_ros_filters library
 add_library(pcl_ros_filters SHARED
@@ -93,6 +98,7 @@ add_library(pcl_ros_filters SHARED
 )
 target_link_libraries(pcl_ros_filters pcl_ros_tf ${PCL_LIBRARIES})
 ament_target_dependencies(pcl_ros_filters ${dependencies})
+
 rclcpp_components_register_node(pcl_ros_filters
   PLUGIN "pcl_ros::ExtractIndices"
   EXECUTABLE filter_extract_indices_node
