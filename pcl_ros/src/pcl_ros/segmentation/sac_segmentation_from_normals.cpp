@@ -233,7 +233,6 @@ void pcl_ros::SACSegmentationFromNormals::input_normals_indices_callback(
     return;
   }
 
-  /// DEBUG
   if (indices && !indices->header.frame_id.empty()) {
     RCLCPP_DEBUG(
       get_logger(),
@@ -265,7 +264,6 @@ void pcl_ros::SACSegmentationFromNormals::input_normals_indices_callback(
       cloud_normals->header.stamp.sec, cloud_normals->header.stamp.nanosec,
       cloud_normals->header.frame_id.c_str(), "normals");
   }
-  ///
 
   // Extra checks for safety
   int cloud_nr_points = cloud->width * cloud->height;

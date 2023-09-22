@@ -137,6 +137,8 @@ void pcl_ros::SegmentDifferences::input_target_callback(
   const sensor_msgs::msg::PointCloud2::ConstSharedPtr & cloud,
   const sensor_msgs::msg::PointCloud2::ConstSharedPtr & cloud_target)
 {
+  std::lock_guard<std::mutex> lock(mutex_);
+
   // No subscribers, no work
   if (count_subscribers(pub_output_->get_topic_name()) <= 0) {
     return;
@@ -162,9 +164,6 @@ void pcl_ros::SegmentDifferences::input_target_callback(
     cloud_target->width * cloud_target->height, pcl::getFieldsList(*cloud_target).c_str(),
     cloud_target->header.stamp.sec, cloud_target->header.stamp.nanosec,
     cloud_target->header.frame_id.c_str(), "target");
-
-  // Acquire the mutex before accessing the underlying implementation */
-  std::lock_guard<std::mutex> lock(mutex_);
 
   boost::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> pcl_cloud =
     boost::make_shared<pcl::PointCloud<pcl::PointXYZ>>();

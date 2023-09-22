@@ -31,7 +31,7 @@
  *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  *  POSSIBILITY OF SUCH DAMAGE.
  *
- * $Id: sac_segmentation.hpp 33195 2010-10-10 14:12:19Z marton $
+ * $Id: sac_segmentation.cpp 33195 2010-10-10 14:12:19Z marton $
  *
  */
 
@@ -180,12 +180,12 @@ void pcl_ros::SACSegmentation::init_parameters()
     " - optimize_coefficients : %s\n"
     " - ouput_frame : %s\n"
     " - probability : %f\n"
-    " - radius_min : %f\n"
-    " - radius_max : %f\n",
+    " - radius_max : %f\n"
+    " - radius_min : %f\n",
     axis_[0], axis_[1], axis_[2], distance_threshold_, eps_angle_, input_frame_.c_str(),
     latched_indices_ ? "true" : "false", max_iterations_, method_type_, min_inliers_, model_type_,
-    optimize_coefficients_ ? "true" : "false", output_frame_.c_str(), probability_, radius_min_,
-    radius_max_);
+    optimize_coefficients_ ? "true" : "false", output_frame_.c_str(), probability_, radius_max_,
+    radius_min_);
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////
@@ -289,13 +289,13 @@ rcl_interfaces::msg::SetParametersResult pcl_ros::SACSegmentation::set_parameter
       }
     }
 
-    if (param.get_name() == "min_inliers") {
-      int new_min_inliers = param.as_int();
-      if (min_inliers_ != new_min_inliers) {
-        min_inliers_ = new_min_inliers;
+    if (param.get_name() == "input_frame") {
+      std::string new_input_frame = param.as_string();
+      if (input_frame_ != new_input_frame) {
         RCLCPP_DEBUG(
-          get_logger(), "[set_parameters_callback] Setting new minimum number of inliers to: %d",
-          min_inliers_);
+          get_logger(), "[set_parameters_callback] Setting the input TF frame to: %s",
+          input_frame_.c_str());
+        RCLCPP_WARN(get_logger(), "[set_parameters_callback] input_frame TF not implemented yet!");
       }
     }
 
@@ -307,6 +307,16 @@ rcl_interfaces::msg::SetParametersResult pcl_ros::SACSegmentation::set_parameter
           get_logger(), "[set_parameters_callback] Setting new maximum number of iterations to: %d",
           max_iterations_);
         impl_.setMaxIterations(max_iterations_);
+      }
+    }
+
+    if (param.get_name() == "min_inliers") {
+      int new_min_inliers = param.as_int();
+      if (min_inliers_ != new_min_inliers) {
+        min_inliers_ = new_min_inliers;
+        RCLCPP_DEBUG(
+          get_logger(), "[set_parameters_callback] Setting new minimum number of inliers to: %d",
+          min_inliers_);
       }
     }
 
@@ -331,17 +341,6 @@ rcl_interfaces::msg::SetParametersResult pcl_ros::SACSegmentation::set_parameter
       }
     }
 
-    if (param.get_name() == "radius_min") {
-      double new_radius_min = param.as_double();
-      if (radius_min_ != new_radius_min) {
-        radius_min_ = new_radius_min;
-        RCLCPP_DEBUG(
-          get_logger(), "[set_parameters_callback] Setting minimum allowable model radius to: %f",
-          radius_min_);
-        impl_.setRadiusLimits(radius_min_, radius_max_);
-      }
-    }
-
     if (param.get_name() == "radius_max") {
       double new_radius_max = param.as_double();
       if (radius_max_ != new_radius_max) {
@@ -353,16 +352,6 @@ rcl_interfaces::msg::SetParametersResult pcl_ros::SACSegmentation::set_parameter
       }
     }
 
-    if (param.get_name() == "input_frame") {
-      std::string new_input_frame = param.as_string();
-      if (input_frame_ != new_input_frame) {
-        RCLCPP_DEBUG(
-          get_logger(), "[set_parameters_callback] Setting the input TF frame to: %s",
-          input_frame_.c_str());
-        RCLCPP_WARN(get_logger(), "[set_parameters_callback] input_frame TF not implemented yet!");
-      }
-    }
-
     if (param.get_name() == "output_frame") {
       std::string new_output_frame = param.as_string();
       if (output_frame_ != new_output_frame) {
@@ -370,6 +359,17 @@ rcl_interfaces::msg::SetParametersResult pcl_ros::SACSegmentation::set_parameter
           get_logger(), "[set_parameters_callback] Setting the output TF frame to: %s",
           output_frame_.c_str());
         RCLCPP_WARN(get_logger(), "[set_parameters_callback] output_frame TF not implemented yet!");
+      }
+    }
+
+    if (param.get_name() == "radius_min") {
+      double new_radius_min = param.as_double();
+      if (radius_min_ != new_radius_min) {
+        radius_min_ = new_radius_min;
+        RCLCPP_DEBUG(
+          get_logger(), "[set_parameters_callback] Setting minimum allowable model radius to: %f",
+          radius_min_);
+        impl_.setRadiusLimits(radius_min_, radius_max_);
       }
     }
   }
@@ -405,7 +405,6 @@ void pcl_ros::SACSegmentation::input_indices_callback(
     return;
   }
 
-  /// DEBUG
   if (indices && !indices->header.frame_id.empty()) {
     RCLCPP_DEBUG(
       get_logger(),
@@ -426,7 +425,6 @@ void pcl_ros::SACSegmentation::input_indices_callback(
       cloud->width * cloud->height, cloud->header.stamp.sec, cloud->header.stamp.nanosec,
       cloud->header.frame_id.c_str(), "input");
   }
-  ///
 
   // Check whether the user has given a different input TF frame
   sensor_msgs::msg::PointCloud2::ConstSharedPtr cloud_tf;

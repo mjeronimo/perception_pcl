@@ -31,7 +31,7 @@
  *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  *  POSSIBILITY OF SUCH DAMAGE.
  *
- * $Id: extract_clusters.hpp 32052 2010-08-27 02:19:30Z rusu $
+ * $Id: extract_clusters.cpp 32052 2010-08-27 02:19:30Z rusu $
  *
  */
 
@@ -57,9 +57,9 @@ pcl_ros::EuclideanClusterExtraction::EuclideanClusterExtraction(const rclcpp::No
 void pcl_ros::EuclideanClusterExtraction::init_parameters()
 {
   add_parameter(
-    "cluster_tolerance", rclcpp::ParameterValue(cluster_tolerance_),
-    floating_point_range{0.0, 2.0, 0.0},  // from, to, step
-    "The spatial tolerance as a measure in the L2 Euclidean space");
+    "cluster_max_size", rclcpp::ParameterValue(cluster_max_size_),
+    integer_range{0, 2147483647, 0},  // from, to, step
+    "The maximum number of points that a cluster must contain in order to be accepted");
 
   add_parameter(
     "cluster_min_size", rclcpp::ParameterValue(cluster_min_size_),
@@ -67,9 +67,9 @@ void pcl_ros::EuclideanClusterExtraction::init_parameters()
     "The minimum number of points that a cluster must contain in order to be accepted");
 
   add_parameter(
-    "cluster_max_size", rclcpp::ParameterValue(cluster_max_size_),
-    integer_range{0, 2147483647, 0},  // from, to, step
-    "The maximum number of points that a cluster must contain in order to be accepted");
+    "cluster_tolerance", rclcpp::ParameterValue(cluster_tolerance_),
+    floating_point_range{0.0, 2.0, 0.0},  // from, to, step
+    "The spatial tolerance as a measure in the L2 Euclidean space");
 
   add_parameter(
     "max_clusters", rclcpp::ParameterValue(max_clusters_),
@@ -80,9 +80,9 @@ void pcl_ros::EuclideanClusterExtraction::init_parameters()
     "publish_indices", rclcpp::ParameterValue(publish_indices_),
     "Whether to publish the point cloud indices");
 
-  cluster_tolerance_ = get_parameter("cluster_tolerance").as_double();
-  cluster_min_size_ = get_parameter("cluster_min_size").as_int();
   cluster_max_size_ = get_parameter("cluster_max_size").as_int();
+  cluster_min_size_ = get_parameter("cluster_min_size").as_int();
+  cluster_tolerance_ = get_parameter("cluster_tolerance").as_double();
   max_clusters_ = get_parameter("max_clusters").as_int();
   publish_indices_ = get_parameter("publish_indices").as_bool();
 
@@ -105,12 +105,12 @@ void pcl_ros::EuclideanClusterExtraction::init_parameters()
   RCLCPP_DEBUG(
     get_logger(),
     "[init_parameters] Node initialized with the following parameters:\n"
-    " - cluster_tolerance : %f\n"
-    " - cluster_min_size : %d\n"
     " - cluster_max_size : %d\n"
+    " - cluster_min_size : %d\n"
+    " - cluster_tolerance : %f\n"
     " - max_clusters : %d\n"
     " - publish_indices : %s\n",
-    cluster_tolerance_, cluster_min_size_, cluster_max_size_, max_clusters_,
+    cluster_max_size_, cluster_min_size_, cluster_tolerance_, max_clusters_,
     publish_indices_ ? "true" : "false");
 }
 
@@ -169,14 +169,14 @@ pcl_ros::EuclideanClusterExtraction::set_parameters_callback(
   std::lock_guard<std::mutex> lock(mutex_);
 
   for (const rclcpp::Parameter & param : params) {
-    if (param.get_name() == "cluster_tolerance") {
-      double new_cluster_tolerance = param.as_double();
-      if (cluster_tolerance_ != new_cluster_tolerance) {
-        cluster_tolerance_ = new_cluster_tolerance;
+    if (param.get_name() == "cluster_max_size") {
+      int new_cluster_max_size = param.as_int();
+      if (cluster_max_size_ != new_cluster_max_size) {
+        cluster_max_size_ = new_cluster_max_size;
         RCLCPP_DEBUG(
-          get_logger(), "[set_parameters_callback] Setting new clustering tolerance to: %f.",
-          cluster_tolerance_);
-        impl_.setClusterTolerance(cluster_tolerance_);
+          get_logger(), "[set_parameters_callback] Setting the maximum cluster size to: %d.",
+          cluster_max_size_);
+        impl_.setMaxClusterSize(cluster_max_size_);
       }
     }
 
@@ -191,14 +191,14 @@ pcl_ros::EuclideanClusterExtraction::set_parameters_callback(
       }
     }
 
-    if (param.get_name() == "cluster_min_size") {
-      int new_cluster_max_size = param.as_int();
-      if (cluster_max_size_ != new_cluster_max_size) {
-        cluster_max_size_ = new_cluster_max_size;
+    if (param.get_name() == "cluster_tolerance") {
+      double new_cluster_tolerance = param.as_double();
+      if (cluster_tolerance_ != new_cluster_tolerance) {
+        cluster_tolerance_ = new_cluster_tolerance;
         RCLCPP_DEBUG(
-          get_logger(), "[set_parameters_callback] Setting the maximum cluster size to: %d.",
-          cluster_max_size_);
-        impl_.setMaxClusterSize(cluster_max_size_);
+          get_logger(), "[set_parameters_callback] Setting new clustering tolerance to: %f.",
+          cluster_tolerance_);
+        impl_.setClusterTolerance(cluster_tolerance_);
       }
     }
 
@@ -225,6 +225,8 @@ void pcl_ros::EuclideanClusterExtraction::input_indices_callback(
   const sensor_msgs::msg::PointCloud2::ConstSharedPtr & cloud,
   const pcl_msgs::msg::PointIndices::ConstSharedPtr & indices)
 {
+  std::lock_guard<std::mutex> lock(mutex_);
+
   // No subscribers, no work
   if (count_subscribers(pub_output_->get_topic_name()) <= 0) {
     return;
@@ -242,7 +244,6 @@ void pcl_ros::EuclideanClusterExtraction::input_indices_callback(
     return;
   }
 
-  /// DEBUG
   if (indices) {
     RCLCPP_DEBUG(
       get_logger(),
@@ -263,7 +264,6 @@ void pcl_ros::EuclideanClusterExtraction::input_indices_callback(
       cloud->width * cloud->height, cloud->header.stamp.sec, cloud->header.stamp.nanosec,
       cloud->header.frame_id.c_str(), "input");
   }
-  ///
 
   IndicesPtr indices_ptr;
   if (indices) {
@@ -274,9 +274,6 @@ void pcl_ros::EuclideanClusterExtraction::input_indices_callback(
   boost::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> pcl_cloud =
     boost::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
   pcl::fromROSMsg(*cloud, *pcl_cloud);
-
-  // Acquire the mutex before accessing the underlying implementation */
-  std::lock_guard<std::mutex> lock(mutex_);
 
   impl_.setInputCloud(pcl_cloud);
   impl_.setIndices(indices_ptr);

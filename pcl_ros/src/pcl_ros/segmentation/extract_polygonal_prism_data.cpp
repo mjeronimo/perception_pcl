@@ -31,7 +31,7 @@
  *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  *  POSSIBILITY OF SUCH DAMAGE.
  *
- * $Id: extract_polygonal_prism_data.hpp 32996 2010-09-30 23:42:11Z rusu $
+ * $Id: extract_polygonal_prism_data.cpp 32996 2010-09-30 23:42:11Z rusu $
  *
  */
 
@@ -50,25 +50,26 @@ pcl_ros::ExtractPolygonalPrismData::ExtractPolygonalPrismData(const rclcpp::Node
 {
   init_parameters();
   subscribe();
+  pub_output_ = create_publisher<pcl_msgs::msg::PointIndices>("output", max_queue_size_);
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////
 void pcl_ros::ExtractPolygonalPrismData::init_parameters()
 {
   add_parameter(
-    "height_min", rclcpp::ParameterValue(height_min_),
-    floating_point_range{-10.0, 10.0, 0.0},  // from, to, step
-    "The minimum allowed distance to the plane model value a point will be considered "
-    "from");
-
-  add_parameter(
     "height_max", rclcpp::ParameterValue(height_max_),
     floating_point_range{-10.0, 10.0, 0.0},  // from, to, step
     "The maximum allowed distance to the plane model value a point will be considered "
     "from");
 
-  height_min_ = get_parameter("height_min").as_double();
+  add_parameter(
+    "height_min", rclcpp::ParameterValue(height_min_),
+    floating_point_range{-10.0, 10.0, 0.0},  // from, to, step
+    "The minimum allowed distance to the plane model value a point will be considered "
+    "from");
+
   height_max_ = get_parameter("height_max").as_double();
+  height_min_ = get_parameter("height_min").as_double();
 
   // Set the parameters on the underlying implementation
   impl_.setHeightLimits(height_min_, height_max_);
@@ -80,9 +81,9 @@ void pcl_ros::ExtractPolygonalPrismData::init_parameters()
   RCLCPP_DEBUG(
     get_logger(),
     "[init_parameters] Node initialized with the following parameters:\n"
-    " - height_min : %f\n"
-    " - height_max : %f\n",
-    height_min_, height_max_);
+    " - height_max : %f\n"
+    " - height_min : %f\n",
+    height_max_, height_min_);
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////
@@ -167,19 +168,6 @@ pcl_ros::ExtractPolygonalPrismData::set_parameters_callback(
   std::lock_guard<std::mutex> lock(mutex_);
 
   for (const rclcpp::Parameter & param : params) {
-    if (param.get_name() == "height_min") {
-      double new_height_min = param.as_double();
-      if (height_min_ != new_height_min) {
-        height_min_ = new_height_min;
-        RCLCPP_DEBUG(
-          get_logger(),
-          "[set_parameters_callback] Setting new minimum height to the planar model to: "
-          "%f.",
-          height_min_);
-        impl_.setHeightLimits(height_min_, height_max_);
-      }
-    }
-
     if (param.get_name() == "height_max") {
       double new_height_max = param.as_double();
       if (height_max_ != new_height_max) {
@@ -189,6 +177,19 @@ pcl_ros::ExtractPolygonalPrismData::set_parameters_callback(
           "[set_parameters_callback] Setting new maximum height to the planar model to: "
           "%f.",
           height_max_);
+        impl_.setHeightLimits(height_min_, height_max_);
+      }
+    }
+
+    if (param.get_name() == "height_min") {
+      double new_height_min = param.as_double();
+      if (height_min_ != new_height_min) {
+        height_min_ = new_height_min;
+        RCLCPP_DEBUG(
+          get_logger(),
+          "[set_parameters_callback] Setting new minimum height to the planar model to: "
+          "%f.",
+          height_min_);
         impl_.setHeightLimits(height_min_, height_max_);
       }
     }
@@ -226,7 +227,6 @@ void pcl_ros::ExtractPolygonalPrismData::input_hull_indices_callback(
     return;
   }
 
-  /// DEBUG
   if (indices) {
     RCLCPP_DEBUG(
       get_logger(),
@@ -252,7 +252,6 @@ void pcl_ros::ExtractPolygonalPrismData::input_hull_indices_callback(
       cloud->width * cloud->height, cloud->header.frame_id.c_str(), "input",
       hull->width * hull->height, hull->header.frame_id.c_str(), "planar_hull");
   }
-  ///
 
   // Acquire the mutex before accessing the underlying implementation */
   std::lock_guard<std::mutex> lock(mutex_);

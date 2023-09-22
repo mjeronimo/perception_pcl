@@ -246,7 +246,6 @@ void pcl_ros::Feature::input_surface_indices_callback(
     return;
   }
 
-  /// DEBUG
   if (cloud_surface) {
     if (indices) {
       RCLCPP_DEBUG(
@@ -297,7 +296,6 @@ void pcl_ros::Feature::input_surface_indices_callback(
       cloud->width * cloud->height, cloud->header.stamp.sec, cloud->header.stamp.nanosec,
       cloud->header.frame_id.c_str(), "input");
   }
-  ///
 
   if (static_cast<int>(cloud->width * cloud->height) < k_) {
     RCLCPP_ERROR(
