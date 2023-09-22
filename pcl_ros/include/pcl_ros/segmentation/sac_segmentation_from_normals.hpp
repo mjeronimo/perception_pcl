@@ -30,6 +30,8 @@
  *  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
  *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  *  POSSIBILITY OF SUCH DAMAGE.
+ * 
+ *  $Id: sac_segmentation_from_normals.h 35564 2011-01-27 07:32:12Z rusu $
  *
  */
 
@@ -100,9 +102,6 @@ protected:
    */
   void axis_callback(const pcl_msgs::msg::ModelCoefficients::ConstSharedPtr & model);
 
-  // TODO(mjeronimo): document this one
-  double normal_distance_weight_{0.1};
-
   /** \brief Parameter callback
    * \param params parameter values to set
    */
@@ -111,6 +110,11 @@ protected:
 
   /** \brief Pointer to parameters callback handle. */
   OnSetParametersCallbackHandle::SharedPtr set_parameters_callback_handle_;
+
+  /** \brief The relative weight (between 0 and 1) to give to the angular distance (0 to pi/2)
+   *  between point normals and the plane normal.
+   */
+  double normal_distance_weight_{0.1};
 
   /** \brief The normals PointCloud subscriber filter. */
   message_filters::Subscriber<sensor_msgs::msg::PointCloud2> sub_normals_filter_;

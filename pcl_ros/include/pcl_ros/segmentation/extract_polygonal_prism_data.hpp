@@ -81,6 +81,10 @@ protected:
   /** \brief Lazy transport subscribe routine. */
   void unsubscribe();
 
+  void input_hull_indices_callback(
+    const PointCloud2::ConstSharedPtr & cloud, const PointCloud2::ConstSharedPtr & hull,
+    const PointIndices::ConstSharedPtr & indices);
+
   /** \brief Input point cloud callback.
    * Because we want to use the same synchronizer object, we push back
    * empty elements with the same timestamp.
@@ -92,10 +96,6 @@ protected:
    * \param hull the pointer to the planar hull point cloud
    * \param indices the pointer to the input point cloud indices
    */
-  void input_hull_indices_callback(
-    const PointCloud2::ConstSharedPtr & cloud, const PointCloud2::ConstSharedPtr & hull,
-    const PointIndices::ConstSharedPtr & indices);
-
   /** \brief Parameter callback
    * \param params parameter values to set
    */
@@ -108,13 +108,13 @@ protected:
   /** \brief Internal mutex. */
   std::mutex mutex_;
 
-  /** \brief The minimum allowed distance to the plane model value a point will be considered from.
-   */
-  double height_min_{0.0};
-
   /** \brief The maximum allowed distance to the plane model value a point will be considered from.
    */
   double height_max_{0.5};
+
+  /** \brief The minimum allowed distance to the plane model value a point will be considered from.
+   */
+  double height_min_{0.0};
 
   /** \brief The message filter subscriber for PointCloud2. */
   message_filters::Subscriber<sensor_msgs::msg::PointCloud2> sub_hull_filter_;

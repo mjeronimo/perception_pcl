@@ -47,6 +47,7 @@
 #include <vector>
 
 #include "pcl_ros/pcl_node.hpp"
+#include <rclcpp/rclcpp.hpp>
 
 namespace pcl_ros
 {
@@ -181,23 +182,23 @@ protected:
    * radius. */
   double radius_max_{0.05};
 
+  /** \brief Pointer to a set of indices stored internally.
+   * (used when \a latched_indices_ is set).
+   */
+  pcl_msgs::msg::PointIndices indices_;
+
+  /** \brief The input PointCloud subscriber. */
+  rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr sub_input_;
+
   /** \brief The output PointIndices publisher. */
   rclcpp::Publisher<pcl_msgs::msg::PointIndices>::SharedPtr pub_indices_;
 
   /** \brief The output ModelCoefficients publisher. */
   rclcpp::Publisher<ModelCoefficients>::SharedPtr pub_model_;
 
-  /** \brief The input PointCloud subscriber. */
-  rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr sub_input_;
-
   /** \brief Null passthrough filter, used for pushing empty elements in the
    * synchronizer */
   message_filters::PassThrough<pcl_msgs::msg::PointIndices> nf_pi_;
-
-  /** \brief Pointer to a set of indices stored internally.
-   * (used when \a latched_indices_ is set).
-   */
-  pcl_msgs::msg::PointIndices indices_;
 
   /** \brief Synchronized input, and indices.*/
   boost::shared_ptr<message_filters::Synchronizer<

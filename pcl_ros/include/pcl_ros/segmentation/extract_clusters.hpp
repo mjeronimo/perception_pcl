@@ -52,6 +52,7 @@ namespace pcl_ros
 {
 namespace sync_policies = message_filters::sync_policies;
 
+////////////////////////////////////////////////////////////////////////////////////////////
 /** \brief @b EuclideanClusterExtraction represents a segmentation class for cluster extraction in
  * an Euclidean sense. \author Radu Bogdan Rusu
  */
@@ -101,14 +102,14 @@ protected:
   /** \brief Internal mutex. */
   std::mutex mutex_;
 
-  /** \brief The spatial tolerance as a measure in the L2 Euclidean space. */
-  double cluster_tolerance_{0.05};
+  /** The maximum number of points that a cluster must contain in order to be accepted. */
+  int cluster_max_size_{2147483647};
 
   /** \brief The minimum number of points that a cluster must contain in order to be accepted. */
   int cluster_min_size_{1};
 
-  /** The maximum number of points that a cluster must contain in order to be accepted. */
-  int cluster_max_size_{2147483647};
+  /** \brief The spatial tolerance as a measure in the L2 Euclidean space. */
+  double cluster_tolerance_{0.05};
 
   /** \brief Maximum number of clusters to extract */
   int max_clusters_{std::numeric_limits<int>::max()};

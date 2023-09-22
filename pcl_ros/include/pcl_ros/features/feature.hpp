@@ -255,13 +255,6 @@ protected:
     pcl_msgs::msg::PointIndices>>>
     sync_input_normals_surface_indices_e_;
 
-  /** \brief Internal method. */
-  void computePublish(
-    const sensor_msgs::msg::PointCloud2::ConstSharedPtr &,
-    const sensor_msgs::msg::PointCloud2::ConstSharedPtr &, const IndicesPtr &)
-  {
-  }  // This should never be called
-
 public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };

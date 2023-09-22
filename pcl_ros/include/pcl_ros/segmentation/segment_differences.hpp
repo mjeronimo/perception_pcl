@@ -47,6 +47,7 @@
 #include <vector>
 
 #include "pcl_ros/pcl_node.hpp"
+#include <rclcpp/rclcpp.hpp>
 
 namespace pcl_ros
 {
