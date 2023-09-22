@@ -41,17 +41,21 @@
 #include <message_filters/subscriber.h>
 #include <message_filters/sync_policies/approximate_time.h>
 #include <message_filters/sync_policies/exact_time.h>
-#include <pcl_ros/pcl_node.hpp>
 #include <pcl/segmentation/segment_differences.h>
+
+#include <memory>
+#include <vector>
+
+#include "pcl_ros/pcl_node.hpp"
 
 namespace pcl_ros
 {
 namespace sync_policies = message_filters::sync_policies;
 
-/** \brief @b SegmentDifferences obtains the difference between two spatially aligned point clouds and returns the
-  * difference between them for a maximum given distance threshold.
-  * \author Radu Bogdan Rusu
-  */
+/** \brief @b SegmentDifferences obtains the difference between two spatially aligned point clouds
+ * and returns the difference between them for a maximum given distance threshold. \author Radu
+ * Bogdan Rusu
+ */
 class SegmentDifferences : public PCLNode<sensor_msgs::msg::PointCloud2>
 {
 public:
@@ -59,8 +63,8 @@ public:
   SegmentDifferences() = delete;
 
   /** \brief SegmentDifferences constructor
-    * \param options node options
-    */
+   * \param options node options
+   */
   explicit SegmentDifferences(const rclcpp::NodeOptions & options = rclcpp::NodeOptions());
 
 protected:
@@ -74,18 +78,17 @@ protected:
   void unsubscribe();
 
   /** \brief Input point cloud callback.
-    * \param cloud the pointer to the input point cloud
-    * \param cloud_target the pointcloud that we want to segment \a cloud from
-    */
+   * \param cloud the pointer to the input point cloud
+   * \param cloud_target the pointcloud that we want to segment \a cloud from
+   */
   void input_target_callback(
-    const PointCloud2::ConstSharedPtr & cloud,
-    const PointCloud2::ConstSharedPtr & cloud_target);
+    const PointCloud2::ConstSharedPtr & cloud, const PointCloud2::ConstSharedPtr & cloud_target);
 
   /** \brief Parameter callback
-    * \param params parameter values to set
-    */
-  rcl_interfaces::msg::SetParametersResult
-  set_parameters_callback(const std::vector<rclcpp::Parameter> & params);
+   * \param params parameter values to set
+   */
+  rcl_interfaces::msg::SetParametersResult set_parameters_callback(
+    const std::vector<rclcpp::Parameter> & params);
 
   /** \brief Pointer to parameters callback handle. */
   OnSetParametersCallbackHandle::SharedPtr set_parameters_callback_handle_;
@@ -93,17 +96,20 @@ protected:
   /** \brief Internal mutex. */
   std::mutex mutex_;
 
-  /** \brief The distance tolerance as a measure in the L2 Euclidean space between corresponding points. */
+  /** \brief The distance tolerance as a measure in the L2 Euclidean space between corresponding
+   * points. */
   double distance_threshold_{0.0};
 
   /** \brief The message filter subscriber for PointCloud2. */
   message_filters::Subscriber<sensor_msgs::msg::PointCloud2> sub_target_filter_;
 
   /** \brief Synchronized input and planar hull.*/
-  std::shared_ptr<message_filters::Synchronizer<sync_policies::ExactTime<sensor_msgs::msg::PointCloud2,
-    sensor_msgs::msg::PointCloud2>>> sync_input_target_e_;
-  std::shared_ptr<message_filters::Synchronizer<sync_policies::ApproximateTime<sensor_msgs::msg::PointCloud2,
-    sensor_msgs::msg::PointCloud2>>> sync_input_target_a_;
+  std::shared_ptr<message_filters::Synchronizer<
+    sync_policies::ExactTime<sensor_msgs::msg::PointCloud2, sensor_msgs::msg::PointCloud2>>>
+    sync_input_target_e_;
+  std::shared_ptr<message_filters::Synchronizer<
+    sync_policies::ApproximateTime<sensor_msgs::msg::PointCloud2, sensor_msgs::msg::PointCloud2>>>
+    sync_input_target_a_;
 
   /** \brief The underlying PCL implementation used. */
   pcl::SegmentDifferences<pcl::PointXYZ> impl_;

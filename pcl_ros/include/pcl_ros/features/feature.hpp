@@ -38,9 +38,13 @@
 #ifndef PCL_ROS__FEATURES__FEATURE_HPP_
 #define PCL_ROS__FEATURES__FEATURE_HPP_
 
-#include "message_filters/pass_through.h"
-#include "pcl_conversions/pcl_conversions.h"
-#include "pcl/features/feature.h"
+#include <message_filters/pass_through.h>
+#include <pcl/features/feature.h>
+#include <pcl_conversions/pcl_conversions.h>
+
+#include <string>
+#include <vector>
+
 #include "pcl_ros/pcl_node.hpp"
 
 namespace pcl_ros
@@ -58,9 +62,6 @@ public:
   typedef pcl::KdTree<pcl::PointXYZ> KdTree;
   typedef pcl::KdTree<pcl::PointXYZ>::Ptr KdTreePtr;
 
-  // typedef pcl::IndicesPtr IndicesPtr;
-  // typedef pcl::IndicesConstPtr IndicesConstPtr;
-
   /** \brief Disallow the empty constructor. */
   Feature() = delete;
 
@@ -68,7 +69,8 @@ public:
     * \param node_name node name
     * \param options node options
     */
-  explicit Feature(const std::string & node_name, const rclcpp::NodeOptions & options = rclcpp::NodeOptions());
+  explicit Feature(
+    const std::string & node_name, const rclcpp::NodeOptions & options = rclcpp::NodeOptions());
 
 protected:
   /** \brief Initialize the node's parameters. */
@@ -86,8 +88,7 @@ protected:
   /** \brief Compute the feature and publish it. Internal method. */
   virtual void computePublish(
     const sensor_msgs::msg::PointCloud2::ConstSharedPtr & cloud,
-    const sensor_msgs::msg::PointCloud2::ConstSharedPtr & surface,
-    const IndicesPtr & indices) = 0;
+    const sensor_msgs::msg::PointCloud2::ConstSharedPtr & surface, const IndicesPtr & indices) = 0;
 
   /** \brief Input point cloud callback. Used when \a use_indices and \a use_surface are set.
     * \param cloud the pointer to the input point cloud
@@ -111,10 +112,10 @@ protected:
   /** \brief Parameter callback
   * \param params parameter values to set
   */
-  rcl_interfaces::msg::SetParametersResult
-  set_parameters_callback(const std::vector<rclcpp::Parameter> & params);
+  rcl_interfaces::msg::SetParametersResult set_parameters_callback(
+    const std::vector<rclcpp::Parameter> & params);
 
-    /** \brief Pointer to parameters callback handle. */
+  /** \brief Pointer to parameters callback handle. */
   OnSetParametersCallbackHandle::SharedPtr set_parameters_callback_handle_;
 
   /** \brief Internal mutex. */
@@ -143,15 +144,16 @@ protected:
   message_filters::PassThrough<sensor_msgs::msg::PointCloud2> nf_pc_;
 
   /** \brief Synchronized input, surface, and point indices.*/
-  boost::shared_ptr<message_filters::Synchronizer<sync_policies::ApproximateTime<sensor_msgs::msg::PointCloud2,
-    sensor_msgs::msg::PointCloud2, pcl_msgs::msg::PointIndices>>> sync_input_surface_indices_a_;
-  boost::shared_ptr<message_filters::Synchronizer<sync_policies::ExactTime<sensor_msgs::msg::PointCloud2,
-    sensor_msgs::msg::PointCloud2, pcl_msgs::msg::PointIndices>>> sync_input_surface_indices_e_;
+  boost::shared_ptr<message_filters::Synchronizer<sync_policies::ApproximateTime<
+    sensor_msgs::msg::PointCloud2, sensor_msgs::msg::PointCloud2, pcl_msgs::msg::PointIndices>>>
+    sync_input_surface_indices_a_;
+  boost::shared_ptr<message_filters::Synchronizer<sync_policies::ExactTime<
+    sensor_msgs::msg::PointCloud2, sensor_msgs::msg::PointCloud2, pcl_msgs::msg::PointIndices>>>
+    sync_input_surface_indices_e_;
 
 public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
-
 
 //////////////////////////////////////////////////////////////////////////////////////////
 class FeatureFromNormals : public PCLNode<sensor_msgs::msg::PointCloud2>
@@ -165,7 +167,8 @@ public:
   FeatureFromNormals() = delete;
 
   /** \brief Empty constructor. */
-  explicit FeatureFromNormals(const std::string & node_name, const rclcpp::NodeOptions & options = rclcpp::NodeOptions());
+  explicit FeatureFromNormals(
+    const std::string & node_name, const rclcpp::NodeOptions & options = rclcpp::NodeOptions());
 
 protected:
   /** \brief Initialize the node's parameters. */
@@ -184,8 +187,7 @@ protected:
   virtual void computePublish(
     const sensor_msgs::msg::PointCloud2::ConstSharedPtr & cloud,
     const sensor_msgs::msg::PointCloud2::ConstSharedPtr & normals,
-    const sensor_msgs::msg::PointCloud2::ConstSharedPtr & surface,
-    const IndicesPtr & indices) = 0;
+    const sensor_msgs::msg::PointCloud2::ConstSharedPtr & surface, const IndicesPtr & indices) = 0;
 
   /** \brief Input point cloud callback. Used when \a use_indices and \a use_surface are set.
     * \param cloud the pointer to the input point cloud
@@ -208,10 +210,10 @@ protected:
   /** \brief Parameter callback
   * \param params parameter values to set
   */
-  rcl_interfaces::msg::SetParametersResult
-  set_parameters_callback(const std::vector<rclcpp::Parameter> & params);
+  rcl_interfaces::msg::SetParametersResult set_parameters_callback(
+    const std::vector<rclcpp::Parameter> & params);
 
-    /** \brief Pointer to parameters callback handle. */
+  /** \brief Pointer to parameters callback handle. */
   OnSetParametersCallbackHandle::SharedPtr set_parameters_callback_handle_;
 
   /** \brief Internal mutex. */
@@ -228,7 +230,7 @@ protected:
    */
   bool use_surface_{false};
 
-    /** \brief The surface PointCloud subscriber filter. */
+  /** \brief The surface PointCloud subscriber filter. */
   message_filters::Subscriber<sensor_msgs::msg::PointCloud2> sub_surface_filter_;
 
   /** \brief Null passthrough filter, used for pushing empty elements in the
@@ -243,17 +245,22 @@ protected:
   message_filters::Subscriber<sensor_msgs::msg::PointCloud2> sub_normals_filter_;
 
   /** \brief Synchronized input, normals, surface, and point indices.*/
-  boost::shared_ptr<message_filters::Synchronizer<sync_policies::ApproximateTime<sensor_msgs::msg::PointCloud2,
-    sensor_msgs::msg::PointCloud2, sensor_msgs::msg::PointCloud2, pcl_msgs::msg::PointIndices>>> sync_input_normals_surface_indices_a_;
+  boost::shared_ptr<message_filters::Synchronizer<sync_policies::ApproximateTime<
+    sensor_msgs::msg::PointCloud2, sensor_msgs::msg::PointCloud2, sensor_msgs::msg::PointCloud2,
+    pcl_msgs::msg::PointIndices>>>
+    sync_input_normals_surface_indices_a_;
 
-  boost::shared_ptr<message_filters::Synchronizer<sync_policies::ExactTime<sensor_msgs::msg::PointCloud2,
-    sensor_msgs::msg::PointCloud2, sensor_msgs::msg::PointCloud2, pcl_msgs::msg::PointIndices>>> sync_input_normals_surface_indices_e_;
+  boost::shared_ptr<message_filters::Synchronizer<sync_policies::ExactTime<
+    sensor_msgs::msg::PointCloud2, sensor_msgs::msg::PointCloud2, sensor_msgs::msg::PointCloud2,
+    pcl_msgs::msg::PointIndices>>>
+    sync_input_normals_surface_indices_e_;
 
   /** \brief Internal method. */
   void computePublish(
     const sensor_msgs::msg::PointCloud2::ConstSharedPtr &,
-    const sensor_msgs::msg::PointCloud2::ConstSharedPtr &,
-    const IndicesPtr &) {}                        // This should never be called
+    const sensor_msgs::msg::PointCloud2::ConstSharedPtr &, const IndicesPtr &)
+  {
+  }  // This should never be called
 
 public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW

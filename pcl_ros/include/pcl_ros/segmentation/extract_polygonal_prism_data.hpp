@@ -41,30 +41,34 @@
 #include <message_filters/pass_through.h>
 #include <message_filters/sync_policies/approximate_time.h>
 #include <message_filters/sync_policies/exact_time.h>
-#include <pcl_ros/pcl_node.hpp>
 #include <pcl/segmentation/extract_polygonal_prism_data.h>
+
+#include <memory>
+#include <vector>
+
+#include "pcl_ros/pcl_node.hpp"
 #include <rclcpp/rclcpp.hpp>
 
 namespace pcl_ros
 {
 namespace sync_policies = message_filters::sync_policies;
 
-/** \brief @b ExtractPolygonalPrismData uses a set of point indices that represent a planar model, and together with
-  * a given height, generates a 3D polygonal prism. The polygonal prism is then used to segment all points lying
-  * inside it.
-  *
-  * An example of its usage is to extract the data lying within a set of 3D boundaries (e.g., objects supported by a plane).
-  * \author Radu Bogdan Rusu
-  */
+/** \brief @b ExtractPolygonalPrismData uses a set of point indices that represent a planar model,
+ * and together with a given height, generates a 3D polygonal prism. The polygonal prism is then
+ * used to segment all points lying inside it.
+ *
+ * An example of its usage is to extract the data lying within a set of 3D boundaries (e.g., objects
+ * supported by a plane). \author Radu Bogdan Rusu
+ */
 class ExtractPolygonalPrismData : public PCLNode<pcl_msgs::msg::PointIndices>
 {
 public:
-    /** \brief Disallow the empty constructor. */
+  /** \brief Disallow the empty constructor. */
   ExtractPolygonalPrismData() = delete;
 
   /** \brief ExtractPolygonalPrismData constructor
-    * \param options node options
-    */
+   * \param options node options
+   */
   explicit ExtractPolygonalPrismData(const rclcpp::NodeOptions & options = rclcpp::NodeOptions());
 
 protected:
@@ -78,26 +82,25 @@ protected:
   void unsubscribe();
 
   /** \brief Input point cloud callback.
-    * Because we want to use the same synchronizer object, we push back
-    * empty elements with the same timestamp.
-    */
+   * Because we want to use the same synchronizer object, we push back
+   * empty elements with the same timestamp.
+   */
   void input_callback(const sensor_msgs::msg::PointCloud2::ConstSharedPtr & input);
 
   /** \brief Input point cloud callback. Used when \a use_indices is set.
-    * \param cloud the pointer to the input point cloud
-    * \param hull the pointer to the planar hull point cloud
-    * \param indices the pointer to the input point cloud indices
-    */
+   * \param cloud the pointer to the input point cloud
+   * \param hull the pointer to the planar hull point cloud
+   * \param indices the pointer to the input point cloud indices
+   */
   void input_hull_indices_callback(
-    const PointCloud2::ConstSharedPtr & cloud,
-    const PointCloud2::ConstSharedPtr & hull,
+    const PointCloud2::ConstSharedPtr & cloud, const PointCloud2::ConstSharedPtr & hull,
     const PointIndices::ConstSharedPtr & indices);
 
   /** \brief Parameter callback
-    * \param params parameter values to set
-    */
-  rcl_interfaces::msg::SetParametersResult
-  set_parameters_callback(const std::vector<rclcpp::Parameter> & params);
+   * \param params parameter values to set
+   */
+  rcl_interfaces::msg::SetParametersResult set_parameters_callback(
+    const std::vector<rclcpp::Parameter> & params);
 
   /** \brief Pointer to parameters callback handle. */
   OnSetParametersCallbackHandle::SharedPtr set_parameters_callback_handle_;
@@ -105,23 +108,27 @@ protected:
   /** \brief Internal mutex. */
   std::mutex mutex_;
 
-  /** \brief The minimum allowed distance to the plane model value a point will be considered from. */
+  /** \brief The minimum allowed distance to the plane model value a point will be considered from.
+   */
   double height_min_{0.0};
 
-  /** \brief The maximum allowed distance to the plane model value a point will be considered from. */
+  /** \brief The maximum allowed distance to the plane model value a point will be considered from.
+   */
   double height_max_{0.5};
 
   /** \brief The message filter subscriber for PointCloud2. */
   message_filters::Subscriber<sensor_msgs::msg::PointCloud2> sub_hull_filter_;
 
   /** \brief Synchronized input, planar hull, and indices.*/
-  std::shared_ptr<message_filters::Synchronizer<sync_policies::ExactTime<sensor_msgs::msg::PointCloud2, sensor_msgs::msg::PointCloud2,
-    pcl_msgs::msg::PointIndices>>> sync_input_hull_indices_e_;
-  std::shared_ptr<message_filters::Synchronizer<sync_policies::ApproximateTime<sensor_msgs::msg::PointCloud2,
-    sensor_msgs::msg::PointCloud2, pcl_msgs::msg::PointIndices>>> sync_input_hull_indices_a_;
+  std::shared_ptr<message_filters::Synchronizer<sync_policies::ExactTime<
+    sensor_msgs::msg::PointCloud2, sensor_msgs::msg::PointCloud2, pcl_msgs::msg::PointIndices>>>
+    sync_input_hull_indices_e_;
+  std::shared_ptr<message_filters::Synchronizer<sync_policies::ApproximateTime<
+    sensor_msgs::msg::PointCloud2, sensor_msgs::msg::PointCloud2, pcl_msgs::msg::PointIndices>>>
+    sync_input_hull_indices_a_;
 
   /** \brief Null passthrough filter, used for pushing empty elements in the
-    * synchronizer */
+   * synchronizer */
   message_filters::PassThrough<pcl_msgs::msg::PointIndices> null_filter_;
 
   /** \brief The PCL implementation used. */

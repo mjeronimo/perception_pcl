@@ -37,37 +37,35 @@
 
 #include "pcl_ros/segmentation/sac_segmentation_from_normals.hpp"
 
+#include <pcl/common/io.h>
+#include <pcl_conversions/pcl_conversions.h>
+
 #include <vector>
-
-#include "pcl/common/io.h"
-#include "pcl_conversions/pcl_conversions.h"
-
-using pcl_conversions::fromPCL;
 
 //////////////////////////////////////////////////////////////////////////////////////////////
 pcl_ros::SACSegmentationFromNormals::SACSegmentationFromNormals(const rclcpp::NodeOptions & options)
-  : SACSegmentation(options)
+: SACSegmentation(options)
 {
   init_parameters();
   subscribe();
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////
-void
-pcl_ros::SACSegmentationFromNormals::init_parameters()
+void pcl_ros::SACSegmentationFromNormals::init_parameters()
 {
   add_parameter(
-    "normal_distance_weight",
-    rclcpp::ParameterValue(normal_distance_weight_),
+    "normal_distance_weight", rclcpp::ParameterValue(normal_distance_weight_),
     floating_point_range{0.0, 1.0, 0.0},  // from, to, step
-    "The relative weight (between 0 and 1) to give to the angular distance (0 to pi/2) between point normals and the plane normal");
+    "The relative weight (between 0 and 1) to give to the angular distance (0 to pi/2) "
+    "between point normals and the plane normal");
 
   double normal_distance_weight_ = get_parameter("normal_distance_weight").as_double();
 
   impl_.setNormalDistanceWeight(normal_distance_weight_);
 
   // Initialize the parameter callback
-  set_parameters_callback_handle_ = add_on_set_parameters_callback(std::bind(&SACSegmentationFromNormals::set_parameters_callback, this, std::placeholders::_1));
+  set_parameters_callback_handle_ = add_on_set_parameters_callback(
+    std::bind(&SACSegmentationFromNormals::set_parameters_callback, this, std::placeholders::_1));
 
   RCLCPP_DEBUG(
     get_logger(),
@@ -77,8 +75,7 @@ pcl_ros::SACSegmentationFromNormals::init_parameters()
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////
-void
-pcl_ros::SACSegmentationFromNormals::subscribe()
+void pcl_ros::SACSegmentationFromNormals::subscribe()
 {
   // Subscribe to the input and normals using filters
   rmw_qos_profile_t custom_qos_profile = rmw_qos_profile_sensor_data;
@@ -88,18 +85,20 @@ pcl_ros::SACSegmentationFromNormals::subscribe()
 
   // Subscribe to an axis direction along which the model search is to be constrained (the first
   // 3 model coefficients will be checked)
-  sub_axis_ =
-    create_subscription<pcl_msgs::msg::ModelCoefficients>("axis", 1,
-      std::bind(&pcl_ros::SACSegmentationFromNormals::axis_callback, this, std::placeholders::_1));
+  sub_axis_ = create_subscription<pcl_msgs::msg::ModelCoefficients>(
+    "axis", 1,
+    std::bind(&pcl_ros::SACSegmentationFromNormals::axis_callback, this, std::placeholders::_1));
 
   if (approximate_sync_) {
     sync_input_normals_indices_a_ =
-      boost::make_shared<message_filters::Synchronizer<
-          sync_policies::ApproximateTime<sensor_msgs::msg::PointCloud2, sensor_msgs::msg::PointCloud2, pcl_msgs::msg::PointIndices>>>(max_queue_size_);
+      boost::make_shared<message_filters::Synchronizer<sync_policies::ApproximateTime<
+        sensor_msgs::msg::PointCloud2, sensor_msgs::msg::PointCloud2,
+        pcl_msgs::msg::PointIndices>>>(max_queue_size_);
   } else {
     sync_input_normals_indices_e_ =
-      boost::make_shared<message_filters::Synchronizer<
-          sync_policies::ExactTime<sensor_msgs::msg::PointCloud2, sensor_msgs::msg::PointCloud2, pcl_msgs::msg::PointIndices>>>(max_queue_size_);
+      boost::make_shared<message_filters::Synchronizer<sync_policies::ExactTime<
+        sensor_msgs::msg::PointCloud2, sensor_msgs::msg::PointCloud2,
+        pcl_msgs::msg::PointIndices>>>(max_queue_size_);
   }
 
   // If we're supposed to look for PointIndices (indices)
@@ -110,9 +109,11 @@ pcl_ros::SACSegmentationFromNormals::subscribe()
     sub_indices_filter_.subscribe(this, "indices", custom_qos_profile);
 
     if (approximate_sync_) {
-      sync_input_normals_indices_a_->connectInput(sub_input_filter_, sub_normals_filter_, sub_indices_filter_);
+      sync_input_normals_indices_a_->connectInput(
+        sub_input_filter_, sub_normals_filter_, sub_indices_filter_);
     } else {
-      sync_input_normals_indices_e_->connectInput(sub_input_filter_, sub_normals_filter_, sub_indices_filter_);
+      sync_input_normals_indices_e_->connectInput(
+        sub_input_filter_, sub_normals_filter_, sub_indices_filter_);
     }
   } else {
     // Create a different callback for copying over the timestamp to fake indices
@@ -136,8 +137,7 @@ pcl_ros::SACSegmentationFromNormals::subscribe()
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////
-void
-pcl_ros::SACSegmentationFromNormals::unsubscribe()
+void pcl_ros::SACSegmentationFromNormals::unsubscribe()
 {
   sub_input_filter_.unsubscribe();
   sub_normals_filter_.unsubscribe();
@@ -150,8 +150,7 @@ pcl_ros::SACSegmentationFromNormals::unsubscribe()
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////
-void
-pcl_ros::SACSegmentationFromNormals::axis_callback(
+void pcl_ros::SACSegmentationFromNormals::axis_callback(
   const pcl_msgs::msg::ModelCoefficients::ConstSharedPtr & model)
 {
   std::lock_guard<std::mutex> lock(mutex_);
@@ -159,15 +158,15 @@ pcl_ros::SACSegmentationFromNormals::axis_callback(
   if (model->values.size() < 3) {
     RCLCPP_ERROR(
       get_logger(),
-      "[axis_callback] Invalid axis direction / model coefficients with %zu values sent on %s!",
+      "[axis_callback] Invalid axis direction / model coefficients with %zu values sent "
+      "on %s!",
       model->values.size(), "axis");
     return;
   }
 
   RCLCPP_DEBUG(
-    get_logger(),
-    "[axis_callback] Received axis direction: %f %f %f",
-    model->values[0], model->values[1], model->values[2]);
+    get_logger(), "[axis_callback] Received axis direction: %f %f %f", model->values[0],
+    model->values[1], model->values[2]);
 
   Eigen::Vector3f axis(model->values[0], model->values[1], model->values[2]);
   impl_.setAxis(axis);
@@ -186,10 +185,9 @@ pcl_ros::SACSegmentationFromNormals::set_parameters_callback(
       if (normal_distance_weight_ != new_normal_distance_weight) {
         normal_distance_weight_ = new_normal_distance_weight;
         RCLCPP_DEBUG(
-          get_logger(),
-          "[set_parameters_callback] Setting new distance weight to: %f.",
+          get_logger(), "[set_parameters_callback] Setting new distance weight to: %f.",
           normal_distance_weight_);
-      impl_.setNormalDistanceWeight(normal_distance_weight_);
+        impl_.setNormalDistanceWeight(normal_distance_weight_);
       }
     }
   }
@@ -200,12 +198,10 @@ pcl_ros::SACSegmentationFromNormals::set_parameters_callback(
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////
-void
-pcl_ros::SACSegmentationFromNormals::input_normals_indices_callback(
+void pcl_ros::SACSegmentationFromNormals::input_normals_indices_callback(
   const sensor_msgs::msg::PointCloud2::ConstSharedPtr & cloud,
   const sensor_msgs::msg::PointCloud2::ConstSharedPtr & cloud_normals,
-  const pcl_msgs::msg::PointIndices::ConstSharedPtr & indices
-)
+  const pcl_msgs::msg::PointIndices::ConstSharedPtr & indices)
 {
   std::lock_guard<std::mutex> lock(mutex_);
 
@@ -242,27 +238,29 @@ pcl_ros::SACSegmentationFromNormals::input_normals_indices_callback(
     RCLCPP_DEBUG(
       get_logger(),
       "[input_normals_indices_callback]\n"
-      "  - PointCloud with %d data points (%s), stamp %d.%09d, and frame %s on topic %s received.\n"
-      "  - PointCloud with %d data points (%s), stamp %d.%09d, and frame %s on topic %s received.\n"
-      "  - PointIndices with %zu values, stamp %d.%09d, and frame %s on topic %s received.",
-      cloud->width * cloud->height, pcl::getFieldsList(*cloud).c_str(),
-      cloud->header.stamp.sec, cloud->header.stamp.nanosec,
-      cloud->header.frame_id.c_str(), "input",
+      "  - PointCloud with %d data points (%s), stamp %d.%09d, and frame %s on topic %s "
+      "received.\n"
+      "  - PointCloud with %d data points (%s), stamp %d.%09d, and frame %s on topic %s "
+      "received.\n"
+      "  - PointIndices with %zu values, stamp %d.%09d, and frame %s on topic %s "
+      "received.",
+      cloud->width * cloud->height, pcl::getFieldsList(*cloud).c_str(), cloud->header.stamp.sec,
+      cloud->header.stamp.nanosec, cloud->header.frame_id.c_str(), "input",
       cloud_normals->width * cloud_normals->height, pcl::getFieldsList(*cloud_normals).c_str(),
       cloud_normals->header.stamp.sec, cloud_normals->header.stamp.nanosec,
-      cloud_normals->header.frame_id.c_str(), "normals",
-      indices->indices.size(),
-      indices->header.stamp.sec, indices->header.stamp.nanosec,
-      indices->header.frame_id.c_str(), "indices");
+      cloud_normals->header.frame_id.c_str(), "normals", indices->indices.size(),
+      indices->header.stamp.sec, indices->header.stamp.nanosec, indices->header.frame_id.c_str(),
+      "indices");
   } else {
     RCLCPP_DEBUG(
       get_logger(),
       "[input_normals_indices_callback]\n"
-      "  - PointCloud with %d data points (%s), stamp %d.%09d, and frame %s on topic %s received.\n"
-      "  - PointCloud with %d data points (%s), stamp %d.%09d, and frame %s on topic %s received.",
-      cloud->width * cloud->height, pcl::getFieldsList(*cloud).c_str(),
-      cloud->header.stamp.sec, cloud->header.stamp.nanosec,
-      cloud->header.frame_id.c_str(), "input",
+      "  - PointCloud with %d data points (%s), stamp %d.%09d, and frame %s on topic %s "
+      "received.\n"
+      "  - PointCloud with %d data points (%s), stamp %d.%09d, and frame %s on topic %s "
+      "received.",
+      cloud->width * cloud->height, pcl::getFieldsList(*cloud).c_str(), cloud->header.stamp.sec,
+      cloud->header.stamp.nanosec, cloud->header.frame_id.c_str(), "input",
       cloud_normals->width * cloud_normals->height, pcl::getFieldsList(*cloud_normals).c_str(),
       cloud_normals->header.stamp.sec, cloud_normals->header.stamp.nanosec,
       cloud_normals->header.frame_id.c_str(), "normals");
@@ -276,7 +274,8 @@ pcl_ros::SACSegmentationFromNormals::input_normals_indices_callback(
   if (cloud_nr_points != cloud_normals_nr_points) {
     RCLCPP_ERROR(
       get_logger(),
-      "[input_normals_indices_callback] Number of points in the input dataset (%d) differs "
+      "[input_normals_indices_callback] Number of points in the input dataset (%d) "
+      "differs "
       "from the number of points in the normals (%d)!",
       cloud_nr_points, cloud_normals_nr_points);
     pub_indices_->publish(inliers);
@@ -284,11 +283,13 @@ pcl_ros::SACSegmentationFromNormals::input_normals_indices_callback(
     return;
   }
 
-  boost::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> pcl_cloud = boost::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
+  boost::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> pcl_cloud =
+    boost::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
   pcl::fromROSMsg(*cloud, *pcl_cloud);
   impl_.setInputCloud(pcl_cloud);
 
-  boost::shared_ptr<pcl::PointCloud<pcl::Normal>> pcl_cloud_normals = boost::make_shared<pcl::PointCloud<pcl::Normal>>();
+  boost::shared_ptr<pcl::PointCloud<pcl::Normal>> pcl_cloud_normals =
+    boost::make_shared<pcl::PointCloud<pcl::Normal>>();
   pcl::fromROSMsg(*cloud_normals, *pcl_cloud_normals);
   impl_.setInputNormals(pcl_cloud_normals);
 
@@ -326,8 +327,7 @@ pcl_ros::SACSegmentationFromNormals::input_normals_indices_callback(
     get_logger(),
     "[input_normals_callback] Published PointIndices with %zu values on topic %s, and "
     "ModelCoefficients with %zu values on topic %s",
-    inliers.indices.size(), "inliers",
-    model.values.size(), "model");
+    inliers.indices.size(), "inliers", model.values.size(), "model");
 
   if (inliers.indices.empty()) {
     RCLCPP_WARN(get_logger(), "[input_indices_callback] No inliers found!");
@@ -336,4 +336,3 @@ pcl_ros::SACSegmentationFromNormals::input_normals_indices_callback(
 
 #include "rclcpp_components/register_node_macro.hpp"
 RCLCPP_COMPONENTS_REGISTER_NODE(pcl_ros::SACSegmentationFromNormals)
-

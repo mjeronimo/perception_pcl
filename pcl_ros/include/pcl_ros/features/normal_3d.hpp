@@ -38,8 +38,9 @@
 #ifndef PCL_ROS__FEATURES__NORMAL_3D_HPP_
 #define PCL_ROS__FEATURES__NORMAL_3D_HPP_
 
+#include <pcl/features/normal_3d.h>
+
 #include "pcl_ros/features/feature.hpp"
-#include "pcl/features/normal_3d.h"
 
 namespace pcl_ros
 {
@@ -53,12 +54,14 @@ namespace pcl_ros
 class NormalEstimation : public Feature
 {
 public:
- /** \brief Disallow the empty constructor. */
+  /** \brief Disallow the empty constructor. */
   NormalEstimation() = delete;
 
   /** \brief Constructor. */
   explicit NormalEstimation(const rclcpp::NodeOptions & options = rclcpp::NodeOptions())
-  : Feature("NormalEstimationNode", options) {}
+  : Feature("NormalEstimationNode", options)
+  {
+  }
 
 private:
   /** \brief PCL implementation object. */
@@ -72,12 +75,10 @@ private:
   /** \brief Compute the feature and publish it. */
   void computePublish(
     const sensor_msgs::msg::PointCloud2::ConstSharedPtr & cloud,
-    const sensor_msgs::msg::PointCloud2::ConstSharedPtr & surface,
-    const IndicesPtr & indices);
+    const sensor_msgs::msg::PointCloud2::ConstSharedPtr & surface, const IndicesPtr & indices);
 
 public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-
 };
 
 }  // namespace pcl_ros

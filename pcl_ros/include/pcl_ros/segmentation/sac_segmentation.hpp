@@ -38,12 +38,14 @@
 #ifndef PCL_ROS__SEGMENTATION__SAC_SEGMENTATION_HPP_
 #define PCL_ROS__SEGMENTATION__SAC_SEGMENTATION_HPP_
 
-#include <string>
+#include <message_filters/pass_through.h>
+#include <message_filters/sync_policies/approximate_time.h>
+#include <message_filters/sync_policies/exact_time.h>
+#include <pcl/segmentation/sac_segmentation.h>
 
-#include "message_filters/pass_through.h"
-#include "message_filters/sync_policies/approximate_time.h"
-#include "message_filters/sync_policies/exact_time.h"
-#include "pcl/segmentation/sac_segmentation.h"
+#include <string>
+#include <vector>
+
 #include "pcl_ros/pcl_node.hpp"
 
 namespace pcl_ros
@@ -52,10 +54,10 @@ namespace sync_policies = message_filters::sync_policies;
 
 ////////////////////////////////////////////////////////////////////////////////////////////
 /** \brief @b SACSegmentation represents the Nodelet segmentation class for Sample Consensus
-  * methods and models, in the sense that it just creates a Nodelet wrapper for generic-purpose
-  * SAC-based segmentation.
-  * \author Radu Bogdan Rusu
-  */
+ * methods and models, in the sense that it just creates a Nodelet wrapper for generic-purpose
+ * SAC-based segmentation.
+ * \author Radu Bogdan Rusu
+ */
 class SACSegmentation : public PCLNode<pcl_msgs::msg::PointIndices>
 {
 public:
@@ -63,8 +65,8 @@ public:
   SACSegmentation() = delete;
 
   /** \brief SACSegmentation constructor
-    * \param options node options
-    */
+   * \param options node options
+   */
   explicit SACSegmentation(const rclcpp::NodeOptions & options = rclcpp::NodeOptions());
 
 protected:
@@ -78,35 +80,33 @@ protected:
   void unsubscribe();
 
   /** \brief Input point cloud callback. Used when \a use_indices is set.
-    * \param cloud the pointer to the input point cloud
-    * \param indices the pointer to the input point cloud indices
-    */
+   * \param cloud the pointer to the input point cloud
+   * \param indices the pointer to the input point cloud indices
+   */
   void input_indices_callback(
     const sensor_msgs::msg::PointCloud2::ConstSharedPtr & cloud,
     const pcl_msgs::msg::PointIndices::ConstSharedPtr & indices);
 
   /** \brief Input point cloud callback. Used when \a use_indices is not set.
-    * \param cloud the pointer to the input point cloud
-    */
+   * \param cloud the pointer to the input point cloud
+   */
   void input_callback(const sensor_msgs::msg::PointCloud2::ConstSharedPtr & cloud)
   {
-      input_indices_callback(cloud, pcl_msgs::msg::PointIndices::ConstSharedPtr());
+    input_indices_callback(cloud, pcl_msgs::msg::PointIndices::ConstSharedPtr());
   }
 
   /** \brief Indices callback. Used when \a latched_indices_ is set.
-    * \param indices the pointer to the input point cloud indices
-    */
-  inline void
-  latched_indices_callback(const pcl_msgs::msg::PointIndices::ConstSharedPtr & indices)
+   * \param indices the pointer to the input point cloud indices
+   */
+  inline void latched_indices_callback(const pcl_msgs::msg::PointIndices::ConstSharedPtr & indices)
   {
     indices_ = *indices;
   }
 
   /** \brief Input callback. Used when \a latched_indices_ is set.
-    * \param input the pointer to the input point cloud
-    */
-  inline void
-  latched_input_callback(const sensor_msgs::msg::PointCloud2::ConstSharedPtr & input)
+   * \param input the pointer to the input point cloud
+   */
+  inline void latched_input_callback(const sensor_msgs::msg::PointCloud2::ConstSharedPtr & input)
   {
     indices_.header = input->header;
     pcl_msgs::msg::PointIndices::ConstSharedPtr indices;
@@ -115,29 +115,30 @@ protected:
   }
 
   /** \brief Parameter callback
-  * \param params parameter values to set
-  */
-  rcl_interfaces::msg::SetParametersResult
-  set_parameters_callback(const std::vector<rclcpp::Parameter> & params);
+   * \param params parameter values to set
+   */
+  rcl_interfaces::msg::SetParametersResult set_parameters_callback(
+    const std::vector<rclcpp::Parameter> & params);
 
-    /** \brief Pointer to parameters callback handle. */
+  /** \brief Pointer to parameters callback handle. */
   OnSetParametersCallbackHandle::SharedPtr set_parameters_callback_handle_;
 
   /** \brief Internal mutex. */
   std::mutex mutex_;
 
-    /** \brief The axis along which we need to search for a model perpendicular to. */
+  /** \brief The axis along which we need to search for a model perpendicular to. */
   std::vector<double> axis_{0.0, 0.0, 0.0};
 
   /** \brief Distance to the model threshold (user given parameter). */
   double distance_threshold_{0.02};
 
-  /** \brief The maximum allowed difference between the model normal and the given axis, _in radians_. */
+  /** \brief The maximum allowed difference between the model normal and the given axis, _in
+   * radians_. */
   double eps_angle_{0.17};
 
   /** \brief The input TF frame the data should be transformed into,
-    * if input.header.frame_id is different.
-    */
+   * if input.header.frame_id is different.
+   */
   std::string input_frame_;
 
   /** \brief Set to true if the indices topic is latched.
@@ -165,17 +166,19 @@ protected:
   bool optimize_coefficients_{true};
 
   /** \brief The output TF frame the data should be transformed into,
-    * if input.header.frame_id is different.
-    */
+   * if input.header.frame_id is different.
+   */
   std::string output_frame_;
 
   /** \brief Desired probability of choosing at least one sample free from outliers. */
   double probability_{0.99};
 
-  /** \brief The minimum radius limits for the model. Applicable to all models that estimate a radius. */
+  /** \brief The minimum radius limits for the model. Applicable to all models that estimate a
+   * radius. */
   double radius_min_{0.0};
 
-  /** \brief The maximum radius limits for the model. Applicable to all models that estimate a radius. */
+  /** \brief The maximum radius limits for the model. Applicable to all models that estimate a
+   * radius. */
   double radius_max_{0.05};
 
   /** \brief The output PointIndices publisher. */
@@ -188,7 +191,7 @@ protected:
   rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr sub_input_;
 
   /** \brief Null passthrough filter, used for pushing empty elements in the
-    * synchronizer */
+   * synchronizer */
   message_filters::PassThrough<pcl_msgs::msg::PointIndices> nf_pi_;
 
   /** \brief Pointer to a set of indices stored internally.
@@ -197,10 +200,12 @@ protected:
   pcl_msgs::msg::PointIndices indices_;
 
   /** \brief Synchronized input, and indices.*/
-  boost::shared_ptr<message_filters::Synchronizer<sync_policies::ExactTime<sensor_msgs::msg::PointCloud2,
-    pcl_msgs::msg::PointIndices>>> sync_input_indices_e_;
-  boost::shared_ptr<message_filters::Synchronizer<sync_policies::ApproximateTime<sensor_msgs::msg::PointCloud2,
-    pcl_msgs::msg::PointIndices>>> sync_input_indices_a_;
+  boost::shared_ptr<message_filters::Synchronizer<
+    sync_policies::ExactTime<sensor_msgs::msg::PointCloud2, pcl_msgs::msg::PointIndices>>>
+    sync_input_indices_e_;
+  boost::shared_ptr<message_filters::Synchronizer<
+    sync_policies::ApproximateTime<sensor_msgs::msg::PointCloud2, pcl_msgs::msg::PointIndices>>>
+    sync_input_indices_a_;
 
   /** \brief The PCL implementation used. */
   pcl::SACSegmentation<pcl::PointXYZ> impl_;

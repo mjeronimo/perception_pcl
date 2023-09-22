@@ -48,24 +48,19 @@ pcl_ros::Feature::Feature(const std::string & node_name, const rclcpp::NodeOptio
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////
-void
-pcl_ros::Feature::init_parameters()
+void pcl_ros::Feature::init_parameters()
 {
   add_parameter(
-    "k",
-    rclcpp::ParameterValue(k_),
-    integer_range{0, 1000, 0}, // from, to, step
+    "k", rclcpp::ParameterValue(k_), integer_range{0, 1000, 0},  // from, to, step
     "Number of k-nearest neighbors to search for");
 
   add_parameter(
-    "search_radius",
-    rclcpp::ParameterValue(search_radius_),
-    floating_point_range{0.0, 0.5, 0.0}, // from, to, step
+    "search_radius", rclcpp::ParameterValue(search_radius_),
+    floating_point_range{0.0, 0.5, 0.0},  // from, to, step
     "Sphere radius for nearest neighbor search");
 
   add_parameter(
-    "use_surface",
-    rclcpp::ParameterValue(use_surface_),
+    "use_surface", rclcpp::ParameterValue(use_surface_),
     "Whether to listen for incoming point clouds representing the search surface");
 
   k_ = get_parameter("k").as_int();
@@ -73,7 +68,8 @@ pcl_ros::Feature::init_parameters()
   use_surface_ = get_parameter("use_surface").as_bool();
 
   // Initialize the parameter callback
-  set_parameters_callback_handle_ = add_on_set_parameters_callback(std::bind(&Feature::set_parameters_callback, this, std::placeholders::_1));
+  set_parameters_callback_handle_ = add_on_set_parameters_callback(
+    std::bind(&Feature::set_parameters_callback, this, std::placeholders::_1));
 
   RCLCPP_DEBUG(
     get_logger(),
@@ -85,21 +81,21 @@ pcl_ros::Feature::init_parameters()
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////
-void
-pcl_ros::Feature::subscribe()
+void pcl_ros::Feature::subscribe()
 {
   // If we're supposed to look for PointIndices (indices) or PointCloud (surface) messages
   if (use_indices_ || use_surface_) {
     // Create the objects here
     if (approximate_sync_) {
       sync_input_surface_indices_a_ =
-        boost::make_shared<message_filters::Synchronizer<
-            sync_policies::ApproximateTime<
-              sensor_msgs::msg::PointCloud2, sensor_msgs::msg::PointCloud2, PointIndices>>>(max_queue_size_);
+        boost::make_shared<message_filters::Synchronizer<sync_policies::ApproximateTime<
+          sensor_msgs::msg::PointCloud2, sensor_msgs::msg::PointCloud2, PointIndices>>>(
+          max_queue_size_);
     } else {
       sync_input_surface_indices_e_ =
-        boost::make_shared<message_filters::Synchronizer<
-            sync_policies::ExactTime<sensor_msgs::msg::PointCloud2, sensor_msgs::msg::PointCloud2, PointIndices>>>(max_queue_size_);
+        boost::make_shared<message_filters::Synchronizer<sync_policies::ExactTime<
+          sensor_msgs::msg::PointCloud2, sensor_msgs::msg::PointCloud2, PointIndices>>>(
+          max_queue_size_);
     }
 
     // Subscribe to the input using a filter
@@ -110,7 +106,7 @@ pcl_ros::Feature::subscribe()
     if (use_indices_) {
       // If indices are enabled, subscribe to the indices
       sub_indices_filter_.subscribe(this, "indices", custom_qos_profile);
-      if (use_surface_) {   // Use both indices and surface
+      if (use_surface_) {  // Use both indices and surface
         // If surface is enabled, subscribe to the surface,
         // connect the input-indices-surface trio and register
         sub_surface_filter_.subscribe(this, "surface", custom_qos_profile);
@@ -121,17 +117,21 @@ pcl_ros::Feature::subscribe()
           sync_input_surface_indices_e_->connectInput(
             sub_input_filter_, sub_surface_filter_, sub_indices_filter_);
         }
-      } else {              // Use only indices
-        sub_input_filter_.registerCallback(bind(&Feature::input_callback, this, std::placeholders::_1));
+      } else {  // Use only indices
+        sub_input_filter_.registerCallback(
+          bind(&Feature::input_callback, this, std::placeholders::_1));
         // surface not enabled, connect the input-indices duo and register
         if (approximate_sync_) {
-          sync_input_surface_indices_a_->connectInput(sub_input_filter_, nf_pc_, sub_indices_filter_);
+          sync_input_surface_indices_a_->connectInput(
+            sub_input_filter_, nf_pc_, sub_indices_filter_);
         } else {
-          sync_input_surface_indices_e_->connectInput(sub_input_filter_, nf_pc_, sub_indices_filter_);
+          sync_input_surface_indices_e_->connectInput(
+            sub_input_filter_, nf_pc_, sub_indices_filter_);
         }
       }
-    } else {                // Use only surface
-      sub_input_filter_.registerCallback(bind(&Feature::input_callback, this, std::placeholders::_1));
+    } else {  // Use only surface
+      sub_input_filter_.registerCallback(
+        bind(&Feature::input_callback, this, std::placeholders::_1));
       // indices not enabled, connect the input-surface duo and register
       sub_surface_filter_.subscribe(this, "surface", custom_qos_profile);
       if (approximate_sync_) {
@@ -143,22 +143,24 @@ pcl_ros::Feature::subscribe()
 
     // Register callbacks
     if (approximate_sync_) {
-      sync_input_surface_indices_a_->registerCallback(
-        bind(&Feature::input_surface_indices_callback, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+      sync_input_surface_indices_a_->registerCallback(bind(
+        &Feature::input_surface_indices_callback, this, std::placeholders::_1,
+        std::placeholders::_2, std::placeholders::_3));
     } else {
-      sync_input_surface_indices_e_->registerCallback(
-        bind(&Feature::input_surface_indices_callback, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+      sync_input_surface_indices_e_->registerCallback(bind(
+        &Feature::input_surface_indices_callback, this, std::placeholders::_1,
+        std::placeholders::_2, std::placeholders::_3));
     }
   } else {
     // Subscribe in an old fashion to input only (no filters)
-    sub_input_ = create_subscription<sensor_msgs::msg::PointCloud2>("input", max_queue_size_,
+    sub_input_ = create_subscription<sensor_msgs::msg::PointCloud2>(
+      "input", max_queue_size_,
       bind(&Feature::input_no_filters_callback, this, std::placeholders::_1));
   }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////
-void
-pcl_ros::Feature::unsubscribe()
+void pcl_ros::Feature::unsubscribe()
 {
   if (use_indices_ || use_surface_) {
     sub_input_filter_.unsubscribe();
@@ -176,19 +178,20 @@ pcl_ros::Feature::unsubscribe()
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////
-rcl_interfaces::msg::SetParametersResult
-pcl_ros::Feature::set_parameters_callback(const std::vector<rclcpp::Parameter> & params)
+rcl_interfaces::msg::SetParametersResult pcl_ros::Feature::set_parameters_callback(
+  const std::vector<rclcpp::Parameter> & params)
 {
   std::lock_guard<std::mutex> lock(mutex_);
 
   for (const rclcpp::Parameter & param : params) {
     if (param.get_name() == "k") {
       int new_k = param.as_int();
-      if (k_ != new_k ) {
+      if (k_ != new_k) {
         k_ = new_k;
         RCLCPP_DEBUG(
           get_logger(),
-          "[set_parameters_callback] Setting the number of K nearest neighbors to use for each point: %d.",
+          "[set_parameters_callback] Setting the number of K nearest neighbors to use for each "
+          "point: %d.",
           k_);
       }
     }
@@ -199,7 +202,8 @@ pcl_ros::Feature::set_parameters_callback(const std::vector<rclcpp::Parameter> &
         search_radius_ = new_search_radius;
         RCLCPP_DEBUG(
           get_logger(),
-          "[set_parameters_callback] Setting the nearest neighbors search radius for each point: %f",
+          "[set_parameters_callback] Setting the nearest neighbors search radius for each point: "
+          "%f",
           search_radius_);
       }
     }
@@ -211,8 +215,7 @@ pcl_ros::Feature::set_parameters_callback(const std::vector<rclcpp::Parameter> &
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////
-void
-pcl_ros::Feature::input_surface_indices_callback(
+void pcl_ros::Feature::input_surface_indices_callback(
   const sensor_msgs::msg::PointCloud2::ConstSharedPtr & cloud,
   const sensor_msgs::msg::PointCloud2::ConstSharedPtr & cloud_surface,
   const PointIndices::ConstSharedPtr & indices)
@@ -249,24 +252,28 @@ pcl_ros::Feature::input_surface_indices_callback(
       RCLCPP_DEBUG(
         get_logger(),
         "[input_surface_indices_callback]\n"
-        "  - PointCloud with %d data points (%s), stamp %d.%09d, and frame %s on topic %s received.\n"
-        "  - PointCloud with %d data points (%s), stamp %d.%09d, and frame %s on topic %s received.\n"
+        "  - PointCloud with %d data points (%s), stamp %d.%09d, and frame %s on topic %s "
+        "received.\n"
+        "  - PointCloud with %d data points (%s), stamp %d.%09d, and frame %s on topic %s "
+        "received.\n"
         "  - PointIndices with %zu values, stamp %d.%09d, and frame %s on topic %s received.",
-        cloud->width * cloud->height, pcl::getFieldsList(*cloud).c_str(),
-        cloud->header.stamp.sec, cloud->header.stamp.nanosec, cloud->header.frame_id.c_str(), "input",
+        cloud->width * cloud->height, pcl::getFieldsList(*cloud).c_str(), cloud->header.stamp.sec,
+        cloud->header.stamp.nanosec, cloud->header.frame_id.c_str(), "input",
         cloud_surface->width * cloud_surface->height, pcl::getFieldsList(*cloud_surface).c_str(),
         cloud_surface->header.stamp.sec, cloud_surface->header.stamp.nanosec,
-        cloud_surface->header.frame_id.c_str(), "surface",
-        indices->indices.size(), indices->header.stamp.sec, indices->header.stamp.nanosec,
-        indices->header.frame_id.c_str(), "indices");
+        cloud_surface->header.frame_id.c_str(), "surface", indices->indices.size(),
+        indices->header.stamp.sec, indices->header.stamp.nanosec, indices->header.frame_id.c_str(),
+        "indices");
     } else {
       RCLCPP_DEBUG(
         get_logger(),
         "[input_surface_indices_callback]\n"
-        "  - PointCloud with %d data points (%s), stamp %d.%09d, and frame %s on topic %s received.\n"
-        "  - PointCloud with %d data points (%s), stamp %d.%09d, and frame %s on topic %s received.",
-        cloud->width * cloud->height, pcl::getFieldsList(*cloud).c_str(),
-        cloud->header.stamp.sec, cloud->header.stamp.nanosec, cloud->header.frame_id.c_str(), "input",
+        "  - PointCloud with %d data points (%s), stamp %d.%09d, and frame %s on topic %s "
+        "received.\n"
+        "  - PointCloud with %d data points (%s), stamp %d.%09d, and frame %s on topic %s "
+        "received.",
+        cloud->width * cloud->height, pcl::getFieldsList(*cloud).c_str(), cloud->header.stamp.sec,
+        cloud->header.stamp.nanosec, cloud->header.frame_id.c_str(), "input",
         cloud_surface->width * cloud_surface->height, pcl::getFieldsList(*cloud_surface).c_str(),
         cloud_surface->header.stamp.sec, cloud_surface->header.stamp.nanosec,
         cloud_surface->header.frame_id.c_str(), "surface");
@@ -277,16 +284,18 @@ pcl_ros::Feature::input_surface_indices_callback(
       "[input_surface_indices_callback]\n"
       "  - PointCloud with %d data points (%s), stamp %d.%09d, and frame %s on topic %s received.\n"
       "  - PointIndices with %zu values, stamp %d.%09d, and frame %s on topic %s received.",
-      cloud->width * cloud->height, pcl::getFieldsList(*cloud).c_str(),
-      cloud->header.stamp.sec, cloud->header.stamp.nanosec, cloud->header.frame_id.c_str(), "input",
-      indices->indices.size(), indices->header.stamp.sec, indices->header.stamp.nanosec,
-      indices->header.frame_id.c_str(), "indices");
+      cloud->width * cloud->height, pcl::getFieldsList(*cloud).c_str(), cloud->header.stamp.sec,
+      cloud->header.stamp.nanosec, cloud->header.frame_id.c_str(), "input", indices->indices.size(),
+      indices->header.stamp.sec, indices->header.stamp.nanosec, indices->header.frame_id.c_str(),
+      "indices");
   } else {
     RCLCPP_DEBUG(
       get_logger(),
-      "[input_surface_indices_callback] PointCloud with %d data points, stamp %d.%09d, and frame %s on "
-      "topic %s received.", cloud->width * cloud->height,
-      cloud->header.stamp.sec, cloud->header.stamp.nanosec, cloud->header.frame_id.c_str(), "input");
+      "[input_surface_indices_callback] PointCloud with %d data points, stamp %d.%09d, and frame "
+      "%s on "
+      "topic %s received.",
+      cloud->width * cloud->height, cloud->header.stamp.sec, cloud->header.stamp.nanosec,
+      cloud->header.frame_id.c_str(), "input");
   }
   ///
 
@@ -310,15 +319,16 @@ pcl_ros::Feature::input_surface_indices_callback(
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////
-void
-pcl_ros::Feature::input_no_filters_callback(const sensor_msgs::msg::PointCloud2::ConstSharedPtr & input)
+void pcl_ros::Feature::input_no_filters_callback(
+  const sensor_msgs::msg::PointCloud2::ConstSharedPtr & input)
 {
-  input_surface_indices_callback(input, sensor_msgs::msg::PointCloud2::ConstSharedPtr(), pcl_msgs::msg::PointIndices::ConstSharedPtr());
+  input_surface_indices_callback(
+    input, sensor_msgs::msg::PointCloud2::ConstSharedPtr(),
+    pcl_msgs::msg::PointIndices::ConstSharedPtr());
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////
-void
-pcl_ros::Feature::input_callback(const sensor_msgs::msg::PointCloud2::ConstSharedPtr & input)
+void pcl_ros::Feature::input_callback(const sensor_msgs::msg::PointCloud2::ConstSharedPtr & input)
 {
   pcl_msgs::msg::PointIndices indices;
   indices.header.stamp = input->header.stamp;
@@ -334,7 +344,8 @@ pcl_ros::Feature::input_callback(const sensor_msgs::msg::PointCloud2::ConstShare
 ////////////////////////////////////////////////////////////////////////////////////////////
 
 ////////////////////////////////////////////////////////////////////////////////////////////
-pcl_ros::FeatureFromNormals::FeatureFromNormals(const std::string & node_name, const rclcpp::NodeOptions & options)
+pcl_ros::FeatureFromNormals::FeatureFromNormals(
+  const std::string & node_name, const rclcpp::NodeOptions & options)
 : PCLNode(node_name, options)
 {
   init_parameters();
@@ -342,24 +353,19 @@ pcl_ros::FeatureFromNormals::FeatureFromNormals(const std::string & node_name, c
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////
-void
-pcl_ros::FeatureFromNormals::init_parameters()
+void pcl_ros::FeatureFromNormals::init_parameters()
 {
   add_parameter(
-    "k",
-    rclcpp::ParameterValue(k_),
-    integer_range{0, 1000, 0}, // from, to, step
+    "k", rclcpp::ParameterValue(k_), integer_range{0, 1000, 0},  // from, to, step
     "Number of k-nearest neighbors to search for");
 
   add_parameter(
-    "search_radius",
-    rclcpp::ParameterValue(search_radius_),
-    floating_point_range{0.0, 0.5, 0.0}, // from, to, step
+    "search_radius", rclcpp::ParameterValue(search_radius_),
+    floating_point_range{0.0, 0.5, 0.0},  // from, to, step
     "Sphere radius for nearest neighbor search");
 
   add_parameter(
-    "use_surface",
-    rclcpp::ParameterValue(use_surface_),
+    "use_surface", rclcpp::ParameterValue(use_surface_),
     "Whether to listen for incoming point clouds representing the search surface");
 
   k_ = get_parameter("k").as_int();
@@ -367,7 +373,8 @@ pcl_ros::FeatureFromNormals::init_parameters()
   use_surface_ = get_parameter("use_surface").as_bool();
 
   // Initialize the parameter callback
-  set_parameters_callback_handle_ = add_on_set_parameters_callback(std::bind(&FeatureFromNormals::set_parameters_callback, this, std::placeholders::_1));
+  set_parameters_callback_handle_ = add_on_set_parameters_callback(
+    std::bind(&FeatureFromNormals::set_parameters_callback, this, std::placeholders::_1));
 
   RCLCPP_DEBUG(
     get_logger(),
@@ -379,8 +386,7 @@ pcl_ros::FeatureFromNormals::init_parameters()
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////
-void
-pcl_ros::FeatureFromNormals::subscribe()
+void pcl_ros::FeatureFromNormals::subscribe()
 {
   rmw_qos_profile_t custom_qos_profile = rmw_qos_profile_sensor_data;
   custom_qos_profile.depth = max_queue_size_;
@@ -390,13 +396,14 @@ pcl_ros::FeatureFromNormals::subscribe()
   // Create the objects here
   if (approximate_sync_) {
     sync_input_normals_surface_indices_a_ =
-      boost::make_shared<message_filters::Synchronizer<
-          sync_policies::ApproximateTime<sensor_msgs::msg::PointCloud2, sensor_msgs::msg::PointCloud2,
-          sensor_msgs::msg::PointCloud2, PointIndices>>>(max_queue_size_);
+      boost::make_shared<message_filters::Synchronizer<sync_policies::ApproximateTime<
+        sensor_msgs::msg::PointCloud2, sensor_msgs::msg::PointCloud2, sensor_msgs::msg::PointCloud2,
+        PointIndices>>>(max_queue_size_);
   } else {
     sync_input_normals_surface_indices_e_ =
-      boost::make_shared<message_filters::Synchronizer<sync_policies::ExactTime<sensor_msgs::msg::PointCloud2,
-        sensor_msgs::msg::PointCloud2, sensor_msgs::msg::PointCloud2, PointIndices>>>(max_queue_size_);
+      boost::make_shared<message_filters::Synchronizer<sync_policies::ExactTime<
+        sensor_msgs::msg::PointCloud2, sensor_msgs::msg::PointCloud2, sensor_msgs::msg::PointCloud2,
+        PointIndices>>>(max_queue_size_);
   }
 
   // If we're supposed to look for PointIndices (indices) or PointCloud (surface) messages
@@ -404,73 +411,71 @@ pcl_ros::FeatureFromNormals::subscribe()
     if (use_indices_) {
       // If indices are enabled, subscribe to the indices
       sub_indices_filter_.subscribe(this, "indices", custom_qos_profile);
-      if (use_surface_) {   // Use both indices and surface
+      if (use_surface_) {  // Use both indices and surface
         // If surface is enabled, subscribe to the surface, connect the input-indices-surface trio
         // and register
         sub_surface_filter_.subscribe(this, "surface", custom_qos_profile);
         if (approximate_sync_) {
           sync_input_normals_surface_indices_a_->connectInput(
-            sub_input_filter_,
-            sub_normals_filter_,
-            sub_surface_filter_,
-            sub_indices_filter_);
+            sub_input_filter_, sub_normals_filter_, sub_surface_filter_, sub_indices_filter_);
         } else {
           sync_input_normals_surface_indices_e_->connectInput(
-            sub_input_filter_,
-            sub_normals_filter_,
-            sub_surface_filter_,
-            sub_indices_filter_);
+            sub_input_filter_, sub_normals_filter_, sub_surface_filter_, sub_indices_filter_);
         }
-      } else {              // Use only indices
-        sub_input_filter_.registerCallback(bind(&FeatureFromNormals::input_callback, this, std::placeholders::_1));
+      } else {  // Use only indices
+        sub_input_filter_.registerCallback(
+          bind(&FeatureFromNormals::input_callback, this, std::placeholders::_1));
         if (approximate_sync_) {
           // surface not enabled, connect the input-indices duo and register
           sync_input_normals_surface_indices_a_->connectInput(
-            sub_input_filter_,
-            sub_normals_filter_, nf_pc_,
-            sub_indices_filter_);
+            sub_input_filter_, sub_normals_filter_, nf_pc_, sub_indices_filter_);
         } else {
           // surface not enabled, connect the input-indices duo and register
           sync_input_normals_surface_indices_e_->connectInput(
-            sub_input_filter_,
-            sub_normals_filter_, nf_pc_,
-            sub_indices_filter_);
+            sub_input_filter_, sub_normals_filter_, nf_pc_, sub_indices_filter_);
         }
       }
-    } else {                // Use only surface
+    } else {  // Use only surface
       // indices not enabled, connect the input-surface duo and register
       sub_surface_filter_.subscribe(this, "surface", custom_qos_profile);
 
-      sub_input_filter_.registerCallback(bind(&FeatureFromNormals::input_callback, this, std::placeholders::_1));
+      sub_input_filter_.registerCallback(
+        bind(&FeatureFromNormals::input_callback, this, std::placeholders::_1));
       if (approximate_sync_) {
-        sync_input_normals_surface_indices_a_->connectInput(sub_input_filter_, sub_normals_filter_, sub_surface_filter_, nf_pi_);
+        sync_input_normals_surface_indices_a_->connectInput(
+          sub_input_filter_, sub_normals_filter_, sub_surface_filter_, nf_pi_);
       } else {
-        sync_input_normals_surface_indices_e_->connectInput(sub_input_filter_, sub_normals_filter_, sub_surface_filter_, nf_pi_);
+        sync_input_normals_surface_indices_e_->connectInput(
+          sub_input_filter_, sub_normals_filter_, sub_surface_filter_, nf_pi_);
       }
     }
   } else {
-    sub_input_filter_.registerCallback(bind(&FeatureFromNormals::input_callback, this, std::placeholders::_1));
+    sub_input_filter_.registerCallback(
+      bind(&FeatureFromNormals::input_callback, this, std::placeholders::_1));
 
     if (approximate_sync_) {
-      sync_input_normals_surface_indices_a_->connectInput(sub_input_filter_, sub_normals_filter_, nf_pc_, nf_pi_);
+      sync_input_normals_surface_indices_a_->connectInput(
+        sub_input_filter_, sub_normals_filter_, nf_pc_, nf_pi_);
     } else {
-      sync_input_normals_surface_indices_e_->connectInput(sub_input_filter_, sub_normals_filter_, nf_pc_, nf_pi_);
+      sync_input_normals_surface_indices_e_->connectInput(
+        sub_input_filter_, sub_normals_filter_, nf_pc_, nf_pi_);
     }
   }
 
   // Register callbacks
   if (approximate_sync_) {
-    sync_input_normals_surface_indices_a_->registerCallback(
-      bind(&FeatureFromNormals::input_normals_surface_indices_callback, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4));
+    sync_input_normals_surface_indices_a_->registerCallback(bind(
+      &FeatureFromNormals::input_normals_surface_indices_callback, this, std::placeholders::_1,
+      std::placeholders::_2, std::placeholders::_3, std::placeholders::_4));
   } else {
-    sync_input_normals_surface_indices_e_->registerCallback(
-      bind(&FeatureFromNormals::input_normals_surface_indices_callback, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4));
+    sync_input_normals_surface_indices_e_->registerCallback(bind(
+      &FeatureFromNormals::input_normals_surface_indices_callback, this, std::placeholders::_1,
+      std::placeholders::_2, std::placeholders::_3, std::placeholders::_4));
   }
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////
-void
-pcl_ros::FeatureFromNormals::unsubscribe()
+void pcl_ros::FeatureFromNormals::unsubscribe()
 {
   sub_input_filter_.unsubscribe();
   sub_normals_filter_.unsubscribe();
@@ -487,19 +492,20 @@ pcl_ros::FeatureFromNormals::unsubscribe()
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////
-rcl_interfaces::msg::SetParametersResult
-pcl_ros::FeatureFromNormals::set_parameters_callback(const std::vector<rclcpp::Parameter> & params)
+rcl_interfaces::msg::SetParametersResult pcl_ros::FeatureFromNormals::set_parameters_callback(
+  const std::vector<rclcpp::Parameter> & params)
 {
   std::lock_guard<std::mutex> lock(mutex_);
 
   for (const rclcpp::Parameter & param : params) {
     if (param.get_name() == "k") {
       int new_k = param.as_int();
-      if (k_ != new_k ) {
+      if (k_ != new_k) {
         k_ = new_k;
         RCLCPP_DEBUG(
           get_logger(),
-          "[set_parameters_callback] Setting the number of K nearest neighbors to use for each point: %d.",
+          "[set_parameters_callback] Setting the number of K nearest neighbors to use for each "
+          "point: %d.",
           k_);
       }
     }
@@ -510,7 +516,8 @@ pcl_ros::FeatureFromNormals::set_parameters_callback(const std::vector<rclcpp::P
         search_radius_ = new_search_radius;
         RCLCPP_DEBUG(
           get_logger(),
-          "[set_parameters_callback] Setting the nearest neighbors search radius for each point: %f",
+          "[set_parameters_callback] Setting the nearest neighbors search radius for each point: "
+          "%f",
           search_radius_);
       }
     }
@@ -522,8 +529,7 @@ pcl_ros::FeatureFromNormals::set_parameters_callback(const std::vector<rclcpp::P
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////
-void
-pcl_ros::FeatureFromNormals::input_normals_surface_indices_callback(
+void pcl_ros::FeatureFromNormals::input_normals_surface_indices_callback(
   const sensor_msgs::msg::PointCloud2::ConstSharedPtr & cloud,
   const sensor_msgs::msg::PointCloud2::ConstSharedPtr & cloud_normals,
   const sensor_msgs::msg::PointCloud2::ConstSharedPtr & cloud_surface,
@@ -543,18 +549,14 @@ pcl_ros::FeatureFromNormals::input_normals_surface_indices_callback(
 
   // If surface is given, check if it's valid
   if (cloud_surface && !isValid(cloud_surface, "surface")) {
-    RCLCPP_ERROR(
-      get_logger(),
-      "[input_normals_surface_indices_callback] Invalid input surface!");
+    RCLCPP_ERROR(get_logger(), "[input_normals_surface_indices_callback] Invalid input surface!");
     emptyPublish(cloud);
     return;
   }
 
   // If indices are given, check if they are valid
   if (indices && !isValid(indices)) {
-    RCLCPP_ERROR(
-      get_logger(),
-      "[input_normals_surface_indices_callback] Invalid input indices!");
+    RCLCPP_ERROR(get_logger(), "[input_normals_surface_indices_callback] Invalid input indices!");
     emptyPublish(cloud);
     return;
   }
@@ -565,32 +567,35 @@ pcl_ros::FeatureFromNormals::input_normals_surface_indices_callback(
       RCLCPP_DEBUG(
         get_logger(),
         "[input_normals_surface_indices_callback]\n"
-        "  - PointCloud with %d data points (%s), stamp %d.%09d, and frame %s on topic %s received.\n"
-        "  - PointCloud with %d data points (%s), stamp %d.%09d, and frame %s on topic %s received.\n"
-        "  - PointCloud with %d data points (%s), stamp %d.%09d, and frame %s on topic %s received.\n"
+        "  - PointCloud with %d data points (%s), stamp %d.%09d, and frame %s on topic %s "
+        "received.\n"
+        "  - PointCloud with %d data points (%s), stamp %d.%09d, and frame %s on topic %s "
+        "received.\n"
+        "  - PointCloud with %d data points (%s), stamp %d.%09d, and frame %s on topic %s "
+        "received.\n"
         "  - PointIndices with %zu values, stamp %d.%09d, and frame %s on topic %s received.",
-        cloud->width * cloud->height, pcl::getFieldsList(*cloud).c_str(),
-        cloud->header.stamp.sec, cloud->header.stamp.nanosec,
-        cloud->header.frame_id.c_str(), "input",
+        cloud->width * cloud->height, pcl::getFieldsList(*cloud).c_str(), cloud->header.stamp.sec,
+        cloud->header.stamp.nanosec, cloud->header.frame_id.c_str(), "input",
         cloud_surface->width * cloud_surface->height, pcl::getFieldsList(*cloud_surface).c_str(),
         cloud_surface->header.stamp.sec, cloud_surface->header.stamp.nanosec,
         cloud_surface->header.frame_id.c_str(), "surface",
         cloud_normals->width * cloud_normals->height, pcl::getFieldsList(*cloud_normals).c_str(),
         cloud_normals->header.stamp.sec, cloud_normals->header.stamp.nanosec,
-        cloud_normals->header.frame_id.c_str(), "normals",
-        indices->indices.size(),
-        indices->header.stamp.sec, indices->header.stamp.nanosec,
-        indices->header.frame_id.c_str(), "indices");
+        cloud_normals->header.frame_id.c_str(), "normals", indices->indices.size(),
+        indices->header.stamp.sec, indices->header.stamp.nanosec, indices->header.frame_id.c_str(),
+        "indices");
     } else {
       RCLCPP_DEBUG(
         get_logger(),
         "[input_normals_surface_indices_callback]\n"
-        "  - PointCloud with %d data points (%s), stamp %d.%09d, and frame %s on topic %s received.\n"
-        "  - PointCloud with %d data points (%s), stamp %d.%09d, and frame %s on topic %s received.\n"
-        "  - PointCloud with %d data points (%s), stamp %d.%09d, and frame %s on topic %s received.",
-        cloud->width * cloud->height, pcl::getFieldsList(*cloud).c_str(),
-        cloud->header.stamp.sec, cloud->header.stamp.nanosec,
-        cloud->header.frame_id.c_str(), "input",
+        "  - PointCloud with %d data points (%s), stamp %d.%09d, and frame %s on topic %s "
+        "received.\n"
+        "  - PointCloud with %d data points (%s), stamp %d.%09d, and frame %s on topic %s "
+        "received.\n"
+        "  - PointCloud with %d data points (%s), stamp %d.%09d, and frame %s on topic %s "
+        "received.",
+        cloud->width * cloud->height, pcl::getFieldsList(*cloud).c_str(), cloud->header.stamp.sec,
+        cloud->header.stamp.nanosec, cloud->header.frame_id.c_str(), "input",
         cloud_surface->width * cloud_surface->height, pcl::getFieldsList(*cloud_surface).c_str(),
         cloud_surface->header.stamp.sec, cloud_surface->header.stamp.nanosec,
         cloud_surface->header.frame_id.c_str(), "surface",
@@ -605,24 +610,21 @@ pcl_ros::FeatureFromNormals::input_normals_surface_indices_callback(
       "  - PointCloud with %d data points (%s), stamp %d.%09d, and frame %s on topic %s received.\n"
       "  - PointCloud with %d data points (%s), stamp %d.%09d, and frame %s on topic %s received.\n"
       "  - PointIndices with %zu values, stamp %d.%09d, and frame %s on topic %s received.",
-      cloud->width * cloud->height, pcl::getFieldsList(*cloud).c_str(),
-      cloud->header.stamp.sec, cloud->header.stamp.nanosec,
-      cloud->header.frame_id.c_str(), "input",
+      cloud->width * cloud->height, pcl::getFieldsList(*cloud).c_str(), cloud->header.stamp.sec,
+      cloud->header.stamp.nanosec, cloud->header.frame_id.c_str(), "input",
       cloud_normals->width * cloud_normals->height, pcl::getFieldsList(*cloud_normals).c_str(),
       cloud_normals->header.stamp.sec, cloud_normals->header.stamp.nanosec,
-      cloud_normals->header.frame_id.c_str(), "normals",
-      indices->indices.size(),
-      indices->header.stamp.sec, indices->header.stamp.nanosec,
-      indices->header.frame_id.c_str(), "indices");
+      cloud_normals->header.frame_id.c_str(), "normals", indices->indices.size(),
+      indices->header.stamp.sec, indices->header.stamp.nanosec, indices->header.frame_id.c_str(),
+      "indices");
   } else {
     RCLCPP_DEBUG(
       get_logger(),
       "[input_normals_surface_indices_callback]\n"
       "  - PointCloud with %d data points (%s), stamp %d.%09d, and frame %s on topic %s received.\n"
       "  - PointCloud with %d data points (%s), stamp %d.%09d, and frame %s on topic %s received.",
-      cloud->width * cloud->height, pcl::getFieldsList(*cloud).c_str(),
-      cloud->header.stamp.sec, cloud->header.stamp.nanosec,
-      cloud->header.frame_id.c_str(), "input",
+      cloud->width * cloud->height, pcl::getFieldsList(*cloud).c_str(), cloud->header.stamp.sec,
+      cloud->header.stamp.nanosec, cloud->header.frame_id.c_str(), "input",
       cloud_normals->width * cloud_normals->height, pcl::getFieldsList(*cloud_normals).c_str(),
       cloud_normals->header.stamp.sec, cloud_normals->header.stamp.nanosec,
       cloud_normals->header.frame_id.c_str(), "normals");
@@ -647,3 +649,4 @@ pcl_ros::FeatureFromNormals::input_normals_surface_indices_callback(
 
   computePublish(cloud, cloud_normals, cloud_surface, vindices);
 }
+

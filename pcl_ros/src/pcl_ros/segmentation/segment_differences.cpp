@@ -35,8 +35,9 @@
  *
  */
 
+#include "pcl_ros/segmentation/segment_differences.hpp"
+
 #include <pcl/common/io.h>
-#include <pcl_ros/segmentation/segment_differences.hpp>
 
 //////////////////////////////////////////////////////////////////////////////////////////////
 pcl_ros::SegmentDifferences::SegmentDifferences(const rclcpp::NodeOptions & options)
@@ -48,14 +49,13 @@ pcl_ros::SegmentDifferences::SegmentDifferences(const rclcpp::NodeOptions & opti
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
-void
-pcl_ros::SegmentDifferences::init_parameters()
+void pcl_ros::SegmentDifferences::init_parameters()
 {
   add_parameter(
-      "distance_threshold",
-      rclcpp::ParameterValue(distance_threshold_),
-      floating_point_range{0.0, 2.0, 0.0},  // from, to, step
-      "The distance tolerance as a measure in the L2 Euclidean space between corresponding points");
+    "distance_threshold", rclcpp::ParameterValue(distance_threshold_),
+    floating_point_range{0.0, 2.0, 0.0},  // from, to, step
+    "The distance tolerance as a measure in the L2 Euclidean space between "
+    "corresponding points");
 
   distance_threshold_ = get_parameter("distance_threshold").as_double();
 
@@ -63,18 +63,18 @@ pcl_ros::SegmentDifferences::init_parameters()
   impl_.setDistanceThreshold(distance_threshold_);
 
   // Initialize the parameter callback
-  set_parameters_callback_handle_ = add_on_set_parameters_callback(std::bind(&SegmentDifferences::set_parameters_callback, this, std::placeholders::_1));
+  set_parameters_callback_handle_ = add_on_set_parameters_callback(
+    std::bind(&SegmentDifferences::set_parameters_callback, this, std::placeholders::_1));
 
   RCLCPP_DEBUG(
-      get_logger(),
-      "[init_parameters] Node initialized with the following parameters:\n"
-      " - distance_threshold: %f",
-      distance_threshold_);
+    get_logger(),
+    "[init_parameters] Node initialized with the following parameters:\n"
+    " - distance_threshold: %f",
+    distance_threshold_);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
-void
-pcl_ros::SegmentDifferences::subscribe()
+void pcl_ros::SegmentDifferences::subscribe()
 {
   // Subscribe to the input using a filter
   rmw_qos_profile_t custom_qos_profile = rmw_qos_profile_sensor_data;
@@ -84,32 +84,33 @@ pcl_ros::SegmentDifferences::subscribe()
 
   if (approximate_sync_) {
     sync_input_target_a_ =
-      std::make_shared<message_filters::Synchronizer<
-          sync_policies::ApproximateTime<sensor_msgs::msg::PointCloud2, sensor_msgs::msg::PointCloud2>>>(max_queue_size_);
+      std::make_shared<message_filters::Synchronizer<sync_policies::ApproximateTime<
+        sensor_msgs::msg::PointCloud2, sensor_msgs::msg::PointCloud2>>>(max_queue_size_);
     sync_input_target_a_->connectInput(sub_input_filter_, sub_target_filter_);
-    sync_input_target_a_->registerCallback(
-      bind(&SegmentDifferences::input_target_callback, this, std::placeholders::_1, std::placeholders::_2));
+    sync_input_target_a_->registerCallback(bind(
+      &SegmentDifferences::input_target_callback, this, std::placeholders::_1,
+      std::placeholders::_2));
   } else {
-    sync_input_target_e_ =
-      std::make_shared<message_filters::Synchronizer<
-          sync_policies::ExactTime<sensor_msgs::msg::PointCloud2, sensor_msgs::msg::PointCloud2>>>(max_queue_size_);
+    sync_input_target_e_ = std::make_shared<message_filters::Synchronizer<
+      sync_policies::ExactTime<sensor_msgs::msg::PointCloud2, sensor_msgs::msg::PointCloud2>>>(
+      max_queue_size_);
     sync_input_target_e_->connectInput(sub_input_filter_, sub_target_filter_);
-    sync_input_target_e_->registerCallback(
-      bind(&SegmentDifferences::input_target_callback, this, std::placeholders::_1, std::placeholders::_2));
+    sync_input_target_e_->registerCallback(bind(
+      &SegmentDifferences::input_target_callback, this, std::placeholders::_1,
+      std::placeholders::_2));
   }
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
-void
-pcl_ros::SegmentDifferences::unsubscribe()
+void pcl_ros::SegmentDifferences::unsubscribe()
 {
   sub_input_filter_.unsubscribe();
   sub_target_filter_.unsubscribe();
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////
-rcl_interfaces::msg::SetParametersResult
-pcl_ros::SegmentDifferences::set_parameters_callback(const std::vector<rclcpp::Parameter> & params)
+rcl_interfaces::msg::SetParametersResult pcl_ros::SegmentDifferences::set_parameters_callback(
+  const std::vector<rclcpp::Parameter> & params)
 {
   std::lock_guard<std::mutex> lock(mutex_);
 
@@ -119,8 +120,7 @@ pcl_ros::SegmentDifferences::set_parameters_callback(const std::vector<rclcpp::P
       if (distance_threshold_ != new_distance_threshold) {
         distance_threshold_ = new_distance_threshold;
         RCLCPP_DEBUG(
-          get_logger(),
-          "[set_parameters_callback] Setting new distance threshold to: %f.",
+          get_logger(), "[set_parameters_callback] Setting new distance threshold to: %f.",
           distance_threshold_);
         impl_.setDistanceThreshold(distance_threshold_);
       }
@@ -133,8 +133,7 @@ pcl_ros::SegmentDifferences::set_parameters_callback(const std::vector<rclcpp::P
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////
-void
-pcl_ros::SegmentDifferences::input_target_callback(
+void pcl_ros::SegmentDifferences::input_target_callback(
   const sensor_msgs::msg::PointCloud2::ConstSharedPtr & cloud,
   const sensor_msgs::msg::PointCloud2::ConstSharedPtr & cloud_target)
 {
@@ -154,11 +153,12 @@ pcl_ros::SegmentDifferences::input_target_callback(
   RCLCPP_DEBUG(
     get_logger(),
     "[input_indices_callback]\n"
-    "  - PointCloud with %d data points (%s), stamp %d.%09d, and frame %s on topic %s received.\n"
-    "  - PointCloud with %d data points (%s), stamp %d.%09d, and frame %s on topic %s received.",
-    cloud->width * cloud->height, pcl::getFieldsList(*cloud).c_str(),
-    cloud->header.stamp.sec, cloud->header.stamp.nanosec,
-    cloud->header.frame_id.c_str(), "input",
+    "  - PointCloud with %d data points (%s), stamp %d.%09d, and frame %s on topic %s "
+    "received.\n"
+    "  - PointCloud with %d data points (%s), stamp %d.%09d, and frame %s on topic %s "
+    "received.",
+    cloud->width * cloud->height, pcl::getFieldsList(*cloud).c_str(), cloud->header.stamp.sec,
+    cloud->header.stamp.nanosec, cloud->header.frame_id.c_str(), "input",
     cloud_target->width * cloud_target->height, pcl::getFieldsList(*cloud_target).c_str(),
     cloud_target->header.stamp.sec, cloud_target->header.stamp.nanosec,
     cloud_target->header.frame_id.c_str(), "target");
@@ -166,11 +166,13 @@ pcl_ros::SegmentDifferences::input_target_callback(
   // Acquire the mutex before accessing the underlying implementation */
   std::lock_guard<std::mutex> lock(mutex_);
 
-  boost::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> pcl_cloud = boost::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
+  boost::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> pcl_cloud =
+    boost::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
   pcl::fromROSMsg(*cloud, *pcl_cloud);
   impl_.setInputCloud(pcl_cloud);
 
-  boost::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> pcl_cloud_target = boost::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
+  boost::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> pcl_cloud_target =
+    boost::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
   pcl::fromROSMsg(*cloud_target, *pcl_cloud_target);
   impl_.setTargetCloud(pcl_cloud_target);
 
@@ -183,8 +185,10 @@ pcl_ros::SegmentDifferences::input_target_callback(
 
   RCLCPP_DEBUG(
     get_logger(),
-    "[segmentAndPublish] Published PointCloud2 with %lu points and stamp %d.%09d on topic %s",
-    output.points.size(), fromPCL(output.header).stamp.sec, fromPCL(output.header).stamp.nanosec, "output");
+    "[segmentAndPublish] Published PointCloud2 with %lu points and stamp %d.%09d on "
+    "topic %s",
+    output.points.size(), fromPCL(output.header).stamp.sec, fromPCL(output.header).stamp.nanosec,
+    "output");
 }
 
 #include "rclcpp_components/register_node_macro.hpp"

@@ -37,31 +37,30 @@
 
 #include "pcl_ros/features/normal_3d.hpp"
 
-
-void
-pcl_ros::NormalEstimation::emptyPublish(const sensor_msgs::msg::PointCloud2::ConstSharedPtr & cloud)
+void pcl_ros::NormalEstimation::emptyPublish(
+  const sensor_msgs::msg::PointCloud2::ConstSharedPtr & cloud)
 {
   sensor_msgs::msg::PointCloud2 output;
   output.header = cloud->header;
   pub_output_->publish(output);
 }
 
-void
-pcl_ros::NormalEstimation::computePublish(
+void pcl_ros::NormalEstimation::computePublish(
   const sensor_msgs::msg::PointCloud2::ConstSharedPtr & cloud,
-  const sensor_msgs::msg::PointCloud2::ConstSharedPtr & surface,
-  const IndicesPtr & indices)
+  const sensor_msgs::msg::PointCloud2::ConstSharedPtr & surface, const IndicesPtr & indices)
 {
   // Set the parameters
   impl_.setKSearch(k_);
   impl_.setRadiusSearch(search_radius_);
 
   // Convert from cloud to pcl_cloud
-  boost::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> pcl_cloud = boost::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
+  boost::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> pcl_cloud =
+    boost::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
   pcl::fromROSMsg(*cloud, *pcl_cloud);
 
   // Convert from surface to pcl_surface
-  boost::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> pcl_surface = boost::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
+  boost::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> pcl_surface =
+    boost::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
   pcl::fromROSMsg(*surface, *pcl_surface);
 
   // Set the inputs
@@ -86,4 +85,3 @@ pcl_ros::NormalEstimation::computePublish(
 
 #include "rclcpp_components/register_node_macro.hpp"
 RCLCPP_COMPONENTS_REGISTER_NODE(pcl_ros::NormalEstimation)
-

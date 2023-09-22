@@ -36,7 +36,8 @@
 #ifndef PCL_ROS__SEGMENTATION__SAC_SEGMENTATION_FROM_NORMALS_HPP_
 #define PCL_ROS__SEGMENTATION__SAC_SEGMENTATION_FROM_NORMALS_HPP_
 
-#include <string>
+#include <memory>
+#include <vector>
 
 #include "pcl_ros/segmentation/sac_segmentation.hpp"
 
@@ -46,8 +47,8 @@ namespace sync_policies = message_filters::sync_policies;
 
 ////////////////////////////////////////////////////////////////////////////////////////////
 /** \brief @b SACSegmentationFromNormals represents the PCL nodelet segmentation class for
-  * Sample Consensus methods and models that require the use of surface normals for estimation.
-  */
+ * Sample Consensus methods and models that require the use of surface normals for estimation.
+ */
 class SACSegmentationFromNormals : public SACSegmentation
 {
 public:
@@ -55,8 +56,8 @@ public:
   SACSegmentationFromNormals() = delete;
 
   /** \brief SACSegmentationFromNormals constructor
-    * \param options node options
-    */
+   * \param options node options
+   */
   explicit SACSegmentationFromNormals(const rclcpp::NodeOptions & options = rclcpp::NodeOptions());
 
 protected:
@@ -74,21 +75,20 @@ protected:
   void unsubscribe();
 
   /** \brief Input point cloud callback.
-    * \param cloud the pointer to the input point cloud
-    * \param cloud_normals the pointer to the input point cloud normals
-    * \param indices the pointer to the input point cloud indices
-    */
+   * \param cloud the pointer to the input point cloud
+   * \param cloud_normals the pointer to the input point cloud normals
+   * \param indices the pointer to the input point cloud indices
+   */
   void input_normals_indices_callback(
     const sensor_msgs::msg::PointCloud2::ConstSharedPtr & cloud,
     const sensor_msgs::msg::PointCloud2::ConstSharedPtr & cloud_normals,
     const pcl_msgs::msg::PointIndices::ConstSharedPtr & indices);
 
   /** \brief Input point cloud callback.
-    * Because we want to use the same synchronizer object, we push back
-    * empty elements with the same timestamp.
-    */
-  inline void
-  input_callback(const sensor_msgs::msg::PointCloud2::ConstSharedPtr & cloud)
+   * Because we want to use the same synchronizer object, we push back
+   * empty elements with the same timestamp.
+   */
+  inline void input_callback(const sensor_msgs::msg::PointCloud2::ConstSharedPtr & cloud)
   {
     pcl_msgs::msg::PointIndices indices;
     indices.header.stamp = cloud->header.stamp;
@@ -96,18 +96,18 @@ protected:
   }
 
   /** \brief Model callback
-    * \param model the sample consensus model found
-    */
+   * \param model the sample consensus model found
+   */
   void axis_callback(const pcl_msgs::msg::ModelCoefficients::ConstSharedPtr & model);
 
   // TODO(mjeronimo): document this one
   double normal_distance_weight_{0.1};
 
   /** \brief Parameter callback
-  * \param params parameter values to set
-  */
-  rcl_interfaces::msg::SetParametersResult
-  set_parameters_callback(const std::vector<rclcpp::Parameter> & params);
+   * \param params parameter values to set
+   */
+  rcl_interfaces::msg::SetParametersResult set_parameters_callback(
+    const std::vector<rclcpp::Parameter> & params);
 
   /** \brief Pointer to parameters callback handle. */
   OnSetParametersCallbackHandle::SharedPtr set_parameters_callback_handle_;
@@ -119,14 +119,16 @@ protected:
   rclcpp::Subscription<pcl_msgs::msg::ModelCoefficients>::SharedPtr sub_axis_;
 
   /** \brief Null passthrough filter, used for pushing empty elements in the
-    * synchronizer */
+   * synchronizer */
   message_filters::PassThrough<pcl_msgs::msg::PointIndices> nf_;
 
   /** \brief Synchronized input, normals, and indices.*/
-  boost::shared_ptr<message_filters::Synchronizer<sync_policies::ApproximateTime<sensor_msgs::msg::PointCloud2,
-    sensor_msgs::msg::PointCloud2, pcl_msgs::msg::PointIndices>>> sync_input_normals_indices_a_;
-  boost::shared_ptr<message_filters::Synchronizer<sync_policies::ExactTime<sensor_msgs::msg::PointCloud2,
-    sensor_msgs::msg::PointCloud2, pcl_msgs::msg::PointIndices>>> sync_input_normals_indices_e_;
+  boost::shared_ptr<message_filters::Synchronizer<sync_policies::ApproximateTime<
+    sensor_msgs::msg::PointCloud2, sensor_msgs::msg::PointCloud2, pcl_msgs::msg::PointIndices>>>
+    sync_input_normals_indices_a_;
+  boost::shared_ptr<message_filters::Synchronizer<sync_policies::ExactTime<
+    sensor_msgs::msg::PointCloud2, sensor_msgs::msg::PointCloud2, pcl_msgs::msg::PointIndices>>>
+    sync_input_normals_indices_e_;
 
   /** \brief The PCL implementation used. */
   pcl::SACSegmentationFromNormals<pcl::PointXYZ, pcl::Normal> impl_;

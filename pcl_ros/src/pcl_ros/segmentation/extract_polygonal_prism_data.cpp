@@ -37,14 +37,12 @@
 
 #include "pcl_ros/segmentation/extract_polygonal_prism_data.hpp"
 
+#include <pcl/common/io.h>
+#include <pcl_conversions/pcl_conversions.h>
+
 #include <vector>
 
-#include "pcl/common/io.h"
-#include "pcl_conversions/pcl_conversions.h"
-#include "pcl_ros/transforms.hpp"
-
-using pcl_conversions::moveFromPCL;
-using pcl_conversions::moveToPCL;
+#include <pcl_ros/transforms.hpp>
 
 //////////////////////////////////////////////////////////////////////////////////////////////
 pcl_ros::ExtractPolygonalPrismData::ExtractPolygonalPrismData(const rclcpp::NodeOptions & options)
@@ -55,20 +53,19 @@ pcl_ros::ExtractPolygonalPrismData::ExtractPolygonalPrismData(const rclcpp::Node
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////
-void
-pcl_ros::ExtractPolygonalPrismData::init_parameters()
+void pcl_ros::ExtractPolygonalPrismData::init_parameters()
 {
   add_parameter(
-    "height_min",
-    rclcpp::ParameterValue(height_min_),
+    "height_min", rclcpp::ParameterValue(height_min_),
     floating_point_range{-10.0, 10.0, 0.0},  // from, to, step
-    "The minimum allowed distance to the plane model value a point will be considered from");
+    "The minimum allowed distance to the plane model value a point will be considered "
+    "from");
 
   add_parameter(
-    "height_max",
-    rclcpp::ParameterValue(height_max_),
+    "height_max", rclcpp::ParameterValue(height_max_),
     floating_point_range{-10.0, 10.0, 0.0},  // from, to, step
-    "The maximum allowed distance to the plane model value a point will be considered from");
+    "The maximum allowed distance to the plane model value a point will be considered "
+    "from");
 
   height_min_ = get_parameter("height_min").as_double();
   height_max_ = get_parameter("height_max").as_double();
@@ -77,7 +74,8 @@ pcl_ros::ExtractPolygonalPrismData::init_parameters()
   impl_.setHeightLimits(height_min_, height_max_);
 
   // Initialize the parameter callback
-  set_parameters_callback_handle_ = add_on_set_parameters_callback(std::bind(&ExtractPolygonalPrismData::set_parameters_callback, this, std::placeholders::_1));
+  set_parameters_callback_handle_ = add_on_set_parameters_callback(
+    std::bind(&ExtractPolygonalPrismData::set_parameters_callback, this, std::placeholders::_1));
 
   RCLCPP_DEBUG(
     get_logger(),
@@ -88,8 +86,7 @@ pcl_ros::ExtractPolygonalPrismData::init_parameters()
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////
-void
-pcl_ros::ExtractPolygonalPrismData::subscribe()
+void pcl_ros::ExtractPolygonalPrismData::subscribe()
 {
   rmw_qos_profile_t custom_qos_profile = rmw_qos_profile_sensor_data;
   custom_qos_profile.depth = max_queue_size_;
@@ -99,12 +96,14 @@ pcl_ros::ExtractPolygonalPrismData::subscribe()
   // Create the objects here
   if (approximate_sync_) {
     sync_input_hull_indices_a_ =
-      std::make_shared<message_filters::Synchronizer<
-          sync_policies::ApproximateTime<sensor_msgs::msg::PointCloud2, sensor_msgs::msg::PointCloud2, PointIndices>>>(max_queue_size_);
+      std::make_shared<message_filters::Synchronizer<sync_policies::ApproximateTime<
+        sensor_msgs::msg::PointCloud2, sensor_msgs::msg::PointCloud2, PointIndices>>>(
+        max_queue_size_);
   } else {
     sync_input_hull_indices_e_ =
-      std::make_shared<message_filters::Synchronizer<
-          sync_policies::ExactTime<sensor_msgs::msg::PointCloud2, sensor_msgs::msg::PointCloud2, PointIndices>>>(max_queue_size_);
+      std::make_shared<message_filters::Synchronizer<sync_policies::ExactTime<
+        sensor_msgs::msg::PointCloud2, sensor_msgs::msg::PointCloud2, PointIndices>>>(
+        max_queue_size_);
   }
 
   if (use_indices_) {
@@ -113,15 +112,14 @@ pcl_ros::ExtractPolygonalPrismData::subscribe()
     sub_indices_filter_.subscribe(this, "indices", custom_qos_profile);
     if (approximate_sync_) {
       sync_input_hull_indices_a_->connectInput(
-        sub_input_filter_, sub_hull_filter_,
-        sub_indices_filter_);
+        sub_input_filter_, sub_hull_filter_, sub_indices_filter_);
     } else {
       sync_input_hull_indices_e_->connectInput(
-        sub_input_filter_, sub_hull_filter_,
-        sub_indices_filter_);
+        sub_input_filter_, sub_hull_filter_, sub_indices_filter_);
     }
   } else {
-    sub_input_filter_.registerCallback(std::bind(&ExtractPolygonalPrismData::input_callback, this, std::placeholders::_1));
+    sub_input_filter_.registerCallback(
+      std::bind(&ExtractPolygonalPrismData::input_callback, this, std::placeholders::_1));
 
     if (approximate_sync_) {
       sync_input_hull_indices_a_->connectInput(sub_input_filter_, sub_hull_filter_, null_filter_);
@@ -132,15 +130,18 @@ pcl_ros::ExtractPolygonalPrismData::subscribe()
 
   // Register callbacks
   if (approximate_sync_) {
-    sync_input_hull_indices_a_->registerCallback(std::bind(&ExtractPolygonalPrismData::input_hull_indices_callback, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+    sync_input_hull_indices_a_->registerCallback(std::bind(
+      &ExtractPolygonalPrismData::input_hull_indices_callback, this, std::placeholders::_1,
+      std::placeholders::_2, std::placeholders::_3));
   } else {
-    sync_input_hull_indices_e_->registerCallback(std::bind(&ExtractPolygonalPrismData::input_hull_indices_callback, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+    sync_input_hull_indices_e_->registerCallback(std::bind(
+      &ExtractPolygonalPrismData::input_hull_indices_callback, this, std::placeholders::_1,
+      std::placeholders::_2, std::placeholders::_3));
   }
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////
-void
-pcl_ros::ExtractPolygonalPrismData::unsubscribe()
+void pcl_ros::ExtractPolygonalPrismData::unsubscribe()
 {
   sub_hull_filter_.unsubscribe();
   sub_input_filter_.unsubscribe();
@@ -150,8 +151,8 @@ pcl_ros::ExtractPolygonalPrismData::unsubscribe()
   }
 }
 
-void
-pcl_ros::ExtractPolygonalPrismData::input_callback(const sensor_msgs::msg::PointCloud2::ConstSharedPtr & input)
+void pcl_ros::ExtractPolygonalPrismData::input_callback(
+  const sensor_msgs::msg::PointCloud2::ConstSharedPtr & input)
 {
   PointIndices cloud;
   cloud.header.stamp = input->header.stamp;
@@ -160,7 +161,8 @@ pcl_ros::ExtractPolygonalPrismData::input_callback(const sensor_msgs::msg::Point
 
 //////////////////////////////////////////////////////////////////////////////////////////////
 rcl_interfaces::msg::SetParametersResult
-pcl_ros::ExtractPolygonalPrismData::set_parameters_callback(const std::vector<rclcpp::Parameter> & params)
+pcl_ros::ExtractPolygonalPrismData::set_parameters_callback(
+  const std::vector<rclcpp::Parameter> & params)
 {
   std::lock_guard<std::mutex> lock(mutex_);
 
@@ -171,7 +173,8 @@ pcl_ros::ExtractPolygonalPrismData::set_parameters_callback(const std::vector<rc
         height_min_ = new_height_min;
         RCLCPP_DEBUG(
           get_logger(),
-          "[set_parameters_callback] Setting new minimum height to the planar model to: %f.",
+          "[set_parameters_callback] Setting new minimum height to the planar model to: "
+          "%f.",
           height_min_);
         impl_.setHeightLimits(height_min_, height_max_);
       }
@@ -183,7 +186,8 @@ pcl_ros::ExtractPolygonalPrismData::set_parameters_callback(const std::vector<rc
         height_max_ = new_height_max;
         RCLCPP_DEBUG(
           get_logger(),
-          "[set_parameters_callback] Setting new maximum height to the planar model to: %f.",
+          "[set_parameters_callback] Setting new maximum height to the planar model to: "
+          "%f.",
           height_max_);
         impl_.setHeightLimits(height_min_, height_max_);
       }
@@ -196,10 +200,8 @@ pcl_ros::ExtractPolygonalPrismData::set_parameters_callback(const std::vector<rc
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////
-void
-pcl_ros::ExtractPolygonalPrismData::input_hull_indices_callback(
-  const PointCloud2::ConstSharedPtr & cloud,
-  const PointCloud2::ConstSharedPtr & hull,
+void pcl_ros::ExtractPolygonalPrismData::input_hull_indices_callback(
+  const PointCloud2::ConstSharedPtr & cloud, const PointCloud2::ConstSharedPtr & hull,
   const PointIndices::ConstSharedPtr & indices)
 {
   // No subscribers, no work
@@ -229,13 +231,16 @@ pcl_ros::ExtractPolygonalPrismData::input_hull_indices_callback(
     RCLCPP_DEBUG(
       get_logger(),
       "[input_indices_hull_callback]\n"
-      "  - PointCloud with %d data points (%s), stamp %d.%09d, and frame %s on topic %s received.\n"
-      "  - PointCloud with %d data points (%s), stamp %d.%09d, and frame %s on topic %s received.\n"
-      "  - PointIndices with %zu values, stamp %d.%09d, and frame %s on topic %s received.",
-      cloud->width * cloud->height, pcl::getFieldsList(*cloud).c_str(),
-      cloud->header.stamp.sec, cloud->header.stamp.nanosec, cloud->header.frame_id.c_str(), "input",
-      hull->width * hull->height, pcl::getFieldsList(*hull).c_str(),
-      hull->header.stamp.sec, hull->header.stamp.nanosec, hull->header.frame_id.c_str(), "planar_hull",
+      "  - PointCloud with %d data points (%s), stamp %d.%09d, and frame %s on topic %s "
+      "received.\n"
+      "  - PointCloud with %d data points (%s), stamp %d.%09d, and frame %s on topic %s "
+      "received.\n"
+      "  - PointIndices with %zu values, stamp %d.%09d, and frame %s on topic %s "
+      "received.",
+      cloud->width * cloud->height, pcl::getFieldsList(*cloud).c_str(), cloud->header.stamp.sec,
+      cloud->header.stamp.nanosec, cloud->header.frame_id.c_str(), "input",
+      hull->width * hull->height, pcl::getFieldsList(*hull).c_str(), hull->header.stamp.sec,
+      hull->header.stamp.nanosec, hull->header.frame_id.c_str(), "planar_hull",
       indices->indices.size(), indices->header.stamp.sec, indices->header.stamp.nanosec,
       indices->header.frame_id.c_str(), "indices");
   } else {
@@ -267,13 +272,14 @@ pcl_ros::ExtractPolygonalPrismData::input_hull_indices_callback(
     }
 
     // Convert from planar_hull to pcl_hull
-    boost::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> pcl_hull = boost::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
+    boost::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> pcl_hull =
+      boost::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
     pcl::fromROSMsg(planar_hull, *pcl_hull);
     impl_.setInputPlanarHull(pcl_hull);
-
   } else {
     // Convert from hull to pcl_hull
-    boost::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> pcl_hull = boost::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
+    boost::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> pcl_hull =
+      boost::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
     pcl::fromROSMsg(*hull, *pcl_hull);
     impl_.setInputPlanarHull(pcl_hull);
   }
@@ -284,7 +290,8 @@ pcl_ros::ExtractPolygonalPrismData::input_hull_indices_callback(
   }
 
   // Convert from cloud to pcl_cloud
-  boost::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> pcl_cloud = boost::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
+  boost::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> pcl_cloud =
+    boost::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
   pcl::fromROSMsg(*cloud, *pcl_cloud);
 
   impl_.setInputCloud(pcl_cloud);
@@ -293,9 +300,9 @@ pcl_ros::ExtractPolygonalPrismData::input_hull_indices_callback(
   // Final check if the data is empty
   if (!cloud->width && !cloud->height) {
     pcl::PointIndices pcl_inliers;
-    moveToPCL(inliers, pcl_inliers);
+    pcl_conversions::moveToPCL(inliers, pcl_inliers);
     impl_.segment(pcl_inliers);
-    moveFromPCL(pcl_inliers, inliers);
+    pcl_conversions::moveFromPCL(pcl_inliers, inliers);
   }
 
   // Enforce that the TF frame and the timestamp are copied
@@ -303,7 +310,8 @@ pcl_ros::ExtractPolygonalPrismData::input_hull_indices_callback(
 
   // Publish the result
   pub_output_->publish(inliers);
-  RCLCPP_DEBUG(get_logger(), "[input_hull_callback] Publishing %zu indices.", inliers.indices.size());
+  RCLCPP_DEBUG(
+    get_logger(), "[input_hull_callback] Publishing %zu indices.", inliers.indices.size());
 }
 
 #include "rclcpp_components/register_node_macro.hpp"
