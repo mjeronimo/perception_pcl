@@ -78,9 +78,9 @@ add_library(pcl_ros_features SHARED
 )
 target_link_libraries(pcl_ros_features pcl_ros_tf ${PCL_LIBRARIES})
 ament_target_dependencies(pcl_ros_features ${dependencies})
-class_loader_hide_library_symbols(pcl_ros_features)
+# class_loader_hide_library_symbols(pcl_ros_features)
 
-rclcpp_components_register_node(pcl_ros_filters
+rclcpp_components_register_node(pcl_ros_features
   PLUGIN "pcl_ros::NormalEstimation"
   EXECUTABLE normal_estimation
 )

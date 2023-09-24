@@ -138,7 +138,7 @@ void pcl_ros::SACSegmentation::init_parameters()
   min_inliers_ = get_parameter("min_inliers").as_int();
   model_type_ = get_parameter("model_type").as_int();
   optimize_coefficients_ = get_parameter("optimize_coefficients").as_bool();
-  output_frame_ = get_parameter("outut_frame").as_string();
+  output_frame_ = get_parameter("output_frame").as_string();
   probability_ = get_parameter("probability").as_double();
   radius_max_ = get_parameter("radius_max").as_double();
   radius_min_ = get_parameter("radius_min").as_double();

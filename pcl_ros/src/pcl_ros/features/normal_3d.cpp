@@ -40,6 +40,8 @@
 void pcl_ros::NormalEstimation::emptyPublish(
   const sensor_msgs::msg::PointCloud2::ConstSharedPtr & cloud)
 {
+  RCLCPP_DEBUG(get_logger(), "NormalEstimation::emptyPublish");
+
   sensor_msgs::msg::PointCloud2 output;
   output.header = cloud->header;
   pub_output_->publish(output);
@@ -49,35 +51,57 @@ void pcl_ros::NormalEstimation::computePublish(
   const sensor_msgs::msg::PointCloud2::ConstSharedPtr & cloud,
   const sensor_msgs::msg::PointCloud2::ConstSharedPtr & surface, const IndicesPtr & indices)
 {
+  RCLCPP_DEBUG(get_logger(), "NormalEstimation::computePublish");
+
   // Set the parameters
   impl_.setKSearch(k_);
   impl_.setRadiusSearch(search_radius_);
+
+  RCLCPP_DEBUG(get_logger(), "NormalEstimation::computePublish: 1");
 
   // Convert from cloud to pcl_cloud
   boost::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> pcl_cloud =
     boost::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
   pcl::fromROSMsg(*cloud, *pcl_cloud);
 
+  RCLCPP_DEBUG(get_logger(), "NormalEstimation::computePublish: 2");
+
   // Convert from surface to pcl_surface
-  boost::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> pcl_surface =
-    boost::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
-  pcl::fromROSMsg(*surface, *pcl_surface);
+  if (surface) {
+    boost::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> pcl_surface =
+      boost::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
+    RCLCPP_DEBUG(get_logger(), "NormalEstimation::computePublish: 2.1");
+    pcl::fromROSMsg(*surface, *pcl_surface);
+    impl_.setSearchSurface(pcl_surface);
+  }
+
+  if (indices) {
+    impl_.setIndices(indices);
+  }
+
+  RCLCPP_DEBUG(get_logger(), "NormalEstimation::computePublish: 3");
 
   // Set the inputs
   impl_.setInputCloud(pcl_cloud);
-  impl_.setIndices(indices);
-  impl_.setSearchSurface(pcl_surface);
+
+  RCLCPP_DEBUG(get_logger(), "NormalEstimation::computePublish: 4");
 
   // Compute the normals
   pcl::PointCloud<pcl::Normal> normals;
   impl_.compute(normals);
 
+  RCLCPP_DEBUG(get_logger(), "NormalEstimation::computePublish: 5");
+
   // Convert to a ROS message for publishing
   sensor_msgs::msg::PointCloud2 output;
   pcl::toROSMsg(normals, output);
 
+  RCLCPP_DEBUG(get_logger(), "NormalEstimation::computePublish: 6");
+
   // Enforce that the TF frame and the timestamp are copied
   output.header = cloud->header;
+
+  RCLCPP_DEBUG(get_logger(), "NormalEstimation::computePublish: 7");
 
   // Publish
   pub_output_->publish(output);

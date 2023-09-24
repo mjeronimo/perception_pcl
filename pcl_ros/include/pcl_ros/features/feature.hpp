@@ -100,14 +100,14 @@ protected:
     const sensor_msgs::msg::PointCloud2::ConstSharedPtr & cloud_surface,
     const PointIndicesConstPtr & indices);
 
-  /** \brief Input point cloud callback without using message filters */
-  void input_no_filters_callback(const sensor_msgs::msg::PointCloud2::ConstSharedPtr & input);
-
   /** \brief Input point cloud callback.
     * Because we want to use the same synchronizer object, we push back
     * empty elements with the same timestamp.
     */
   void input_callback(const sensor_msgs::msg::PointCloud2::ConstSharedPtr & input);
+
+  /** \brief Input point cloud callback without using message filters */
+  void input_no_filters_callback(const sensor_msgs::msg::PointCloud2::ConstSharedPtr & input);
 
   /** \brief Parameter callback
   * \param params parameter values to set

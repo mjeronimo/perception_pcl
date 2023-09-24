@@ -61,6 +61,8 @@ public:
   explicit NormalEstimation(const rclcpp::NodeOptions & options = rclcpp::NodeOptions())
   : Feature("NormalEstimationNode", options)
   {
+    RCLCPP_DEBUG(get_logger(), "NormalEstimation: constructor");
+    pub_output_ = create_publisher<sensor_msgs::msg::PointCloud2>("output", max_queue_size_);
   }
 
 private:

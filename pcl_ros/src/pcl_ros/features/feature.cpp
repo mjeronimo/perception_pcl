@@ -43,6 +43,7 @@
 pcl_ros::Feature::Feature(const std::string & node_name, const rclcpp::NodeOptions & options)
 : PCLNode(node_name, options)
 {
+  RCLCPP_DEBUG(get_logger(), "Feature: constructor");
   init_parameters();
   subscribe();
 }
@@ -50,6 +51,8 @@ pcl_ros::Feature::Feature(const std::string & node_name, const rclcpp::NodeOptio
 ////////////////////////////////////////////////////////////////////////////////////////////
 void pcl_ros::Feature::init_parameters()
 {
+  RCLCPP_DEBUG(get_logger(), "Feature: init_parameters");
+
   add_parameter(
     "k", rclcpp::ParameterValue(k_), integer_range{0, 1000, 0},  // from, to, step
     "Number of k-nearest neighbors to search for");
@@ -83,6 +86,11 @@ void pcl_ros::Feature::init_parameters()
 ////////////////////////////////////////////////////////////////////////////////////////////
 void pcl_ros::Feature::subscribe()
 {
+  RCLCPP_DEBUG(get_logger(), "Feature: subscribe");
+
+  RCLCPP_DEBUG(get_logger(), "Feature: subscribe: use_indices_: %d", use_indices_);
+  RCLCPP_DEBUG(get_logger(), "Feature: subscribe: use_surface_: %d", use_surface_);
+
   // If we're supposed to look for PointIndices (indices) or PointCloud (surface) messages
   if (use_indices_ || use_surface_) {
     // Create the objects here
@@ -162,6 +170,8 @@ void pcl_ros::Feature::subscribe()
 ////////////////////////////////////////////////////////////////////////////////////////////
 void pcl_ros::Feature::unsubscribe()
 {
+  RCLCPP_DEBUG(get_logger(), "Feature: unsubscribe");
+
   if (use_indices_ || use_surface_) {
     sub_input_filter_.unsubscribe();
     if (use_indices_) {
@@ -181,6 +191,8 @@ void pcl_ros::Feature::unsubscribe()
 rcl_interfaces::msg::SetParametersResult pcl_ros::Feature::set_parameters_callback(
   const std::vector<rclcpp::Parameter> & params)
 {
+  RCLCPP_DEBUG(get_logger(), "Feature: set_parameters_callback");
+
   std::lock_guard<std::mutex> lock(mutex_);
 
   for (const rclcpp::Parameter & param : params) {
@@ -220,6 +232,8 @@ void pcl_ros::Feature::input_surface_indices_callback(
   const sensor_msgs::msg::PointCloud2::ConstSharedPtr & cloud_surface,
   const PointIndices::ConstSharedPtr & indices)
 {
+  RCLCPP_DEBUG(get_logger(), "Feature: input_surface_indices_callback");
+
   // No subscribers, no work
   if (count_subscribers(pub_output_->get_topic_name()) <= 0) {
     return;
@@ -316,18 +330,75 @@ void pcl_ros::Feature::input_surface_indices_callback(
   computePublish(cloud, cloud_surface, vindices);
 }
 
-////////////////////////////////////////////////////////////////////////////////////////////
+#include "sensor_msgs/msg/point_cloud2.hpp"
+#include "sensor_msgs/point_cloud2_iterator.hpp"
+
+void initializeEmptyPointCloud2(sensor_msgs::msg::PointCloud2 & msg)
+{
+  // Fill in the size of the cloud
+  msg.height = 0;
+  msg.width = 0;
+
+  // Create the modifier to setup the fields and memory
+  sensor_msgs::PointCloud2Modifier mod(msg);
+
+  // Set the fields that our cloud will have
+  mod.setPointCloud2FieldsByString(2, "xyz", "rgb");
+
+  // Set up memory for our points
+  mod.resize(msg.height * msg.width);
+
+  // Now create iterators for fields
+  sensor_msgs::PointCloud2Iterator<float> iter_x(msg, "x");
+  sensor_msgs::PointCloud2Iterator<float> iter_y(msg, "y");
+  sensor_msgs::PointCloud2Iterator<float> iter_z(msg, "z");
+  sensor_msgs::PointCloud2Iterator<uint8_t> iter_r(msg, "r");
+  sensor_msgs::PointCloud2Iterator<uint8_t> iter_g(msg, "g");
+  sensor_msgs::PointCloud2Iterator<uint8_t> iter_b(msg, "b");
+
+  for (; iter_x != iter_x.end(); ++iter_x, ++iter_y, ++iter_z, ++iter_r, ++iter_g, ++iter_b)
+  {
+    *iter_x = 0.0;
+    *iter_y = 0.0;
+    *iter_z = 0.0;
+    *iter_r = 0;
+    *iter_g = 255;
+    *iter_b = 0;
+  }
+}
+
+  ////////////////////////////////////////////////////////////////////////////////////////////
 void pcl_ros::Feature::input_no_filters_callback(
   const sensor_msgs::msg::PointCloud2::ConstSharedPtr & input)
 {
+  RCLCPP_DEBUG(get_logger(), "Feature: input_no_filters_callback");
+
+  // TODO(mjeronimo)
+  // const sensor_msgs::msg::PointCloud2::ConstSharedPtr & cloud,
+  // const sensor_msgs::msg::PointCloud2::ConstSharedPtr & cloud_surface,
+  // const PointIndicesConstPtr & indices);
+
+  auto surface = nullptr; // std::make_shared<sensor_msgs::msg::PointCloud2>();
+  auto indices = nullptr; // std::make_shared<PointIndices>();
+
+  // initializeEmptyPointCloud2(*surface);
+
+  // TODO(mjeronimo) copy the timestamp or use now()?
+  // surface->header.stamp = input->header.stamp;
+  //indices->header.stamp = input->header.stamp;
+
   input_surface_indices_callback(
-    input, sensor_msgs::msg::PointCloud2::ConstSharedPtr(),
-    pcl_msgs::msg::PointIndices::ConstSharedPtr());
+    //input, sensor_msgs::msg::PointCloud2::ConstSharedPtr(),
+    //pcl_msgs::msg::PointIndices::ConstSharedPtr());
+    input, surface, indices);
+    //pcl_msgs::msg::PointIndices::ConstSharedPtr());
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////
 void pcl_ros::Feature::input_callback(const sensor_msgs::msg::PointCloud2::ConstSharedPtr & input)
 {
+  RCLCPP_DEBUG(get_logger(), "Feature: input_callback");
+
   pcl_msgs::msg::PointIndices indices;
   indices.header.stamp = input->header.stamp;
 
@@ -336,6 +407,8 @@ void pcl_ros::Feature::input_callback(const sensor_msgs::msg::PointCloud2::Const
 
   nf_pi_.add(std::make_shared<PointIndices>(indices));
   nf_pc_.add(std::make_shared<sensor_msgs::msg::PointCloud2>(cloud));
+
+  RCLCPP_DEBUG(get_logger(), "Feature::input_callback: return");
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////
@@ -538,7 +611,7 @@ void pcl_ros::FeatureFromNormals::input_normals_surface_indices_callback(
     return;
   }
 
-  // If cloud+normals is given, check if it's valid
+  // If cloud_normals is given, check if it's valid
   if (!isValid(cloud)) {  // || !isValid (cloud_normals, "normals"))
     RCLCPP_ERROR(get_logger(), "[input_normals_surface_indices_callback] Invalid input!");
     emptyPublish(cloud);
@@ -646,5 +719,22 @@ void pcl_ros::FeatureFromNormals::input_normals_surface_indices_callback(
   }
 
   computePublish(cloud, cloud_normals, cloud_surface, vindices);
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////
+void pcl_ros::FeatureFromNormals::input_callback(const sensor_msgs::msg::PointCloud2::ConstSharedPtr & input)
+{
+  RCLCPP_DEBUG(get_logger(), "FeatureFromNormals::input_callback");
+
+  pcl_msgs::msg::PointIndices indices;
+  indices.header.stamp = input->header.stamp;
+
+  sensor_msgs::msg::PointCloud2 cloud;
+  cloud.header.stamp = input->header.stamp;
+
+  nf_pi_.add(std::make_shared<PointIndices>(indices));
+  nf_pc_.add(std::make_shared<sensor_msgs::msg::PointCloud2>(cloud));
+
+  RCLCPP_DEBUG(get_logger(), "FeatureFromNormals::input_callback: return");
 }
 
