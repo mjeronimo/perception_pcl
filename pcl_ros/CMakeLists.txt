@@ -245,7 +245,7 @@ install(
     pcl_ros_filters
     pcl_ros_segmentation
 #    pcl_ros_io
-#    pcl_ros_surface
+    pcl_ros_surface
 #    pointcloud_to_pcd
 #    bag_to_pcd
 #    convert_pcd_to_image
