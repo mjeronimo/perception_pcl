@@ -162,7 +162,7 @@ rclcpp_components_register_node(pcl_ros_segmentation
     EXECUTABLE sac_segmentation_from_normals)
 
 ## Declare the pcl_ros_surface library
-add_library (pcl_ros_surface
+add_library (pcl_ros_surface SHARED
 #  src/pcl_ros/surface/surface.cpp
   # Compilation is much faster if we include all the following CPP files in surface.cpp
   src/pcl_ros/surface/convex_hull.cpp
