@@ -31,7 +31,7 @@
  *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  *  POSSIBILITY OF SUCH DAMAGE.
  * 
- *  $Id: sac_segmentation_from_normals.h 35564 2011-01-27 07:32:12Z rusu $
+ *  $Id: sac_segmentation_from_normals.hpp 35564 2011-01-27 07:32:12Z rusu $
  *
  */
 

@@ -31,7 +31,7 @@
  *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  *  POSSIBILITY OF SUCH DAMAGE.
  *
- * $Id: convex_hull.h 36116 2011-02-22 00:05:23Z rusu $
+ * $Id: convex_hull.hpp 36116 2011-02-22 00:05:23Z rusu $
  *
  */
 
@@ -39,7 +39,9 @@
 #define PCL_ROS__SURFACE__CONVEX_HULL_HPP_
 
 #include <pcl/surface/convex_hull.h>
-//#include <dynamic_reconfigure/server.h>
+
+#include <geometry_msgs/msg/polygon_stamped.hpp>
+
 #include "pcl_ros/pcl_node.hpp"
 
 namespace pcl_ros
@@ -49,43 +51,57 @@ namespace sync_policies = message_filters::sync_policies;
 /** \brief @b ConvexHull2D represents a 2D ConvexHull implementation.
   * \author Radu Bogdan Rusu
   */
-class ConvexHull2D : public PCLNode
+class ConvexHull2D : public PCLNode<sensor_msgs::msg::PointCloud2>
 {
-  typedef pcl::PointCloud<pcl::PointXYZ> PointCloud;
-  typedef boost::shared_ptr<PointCloud> PointCloudPtr;
-  typedef boost::shared_ptr<const PointCloud> PointCloudConstPtr;
+public:
+ /** \brief ConvexHull2D constructor
+   * \param options node options
+   */
+  explicit ConvexHull2D(const rclcpp::NodeOptions & options = rclcpp::NodeOptions());
 
-private:
-  /** \brief Nodelet initialization routine. */
-  virtual void onInit();
+protected:
+  /** \brief Initialize the node's parameters. */
+  void init_parameters();
 
-  /** \brief LazyNodelet connection routine. */
-  virtual void subscribe();
-  virtual void unsubscribe();
+  /** \brief Lazy transport subscribe routine. */
+  void subscribe();
+
+  /** \brief Lazy transport unsubscribe routine. */
+  void unsubscribe();
 
   /** \brief Input point cloud callback.
     * \param cloud the pointer to the input point cloud
     * \param indices the pointer to the input point cloud indices
     */
   void input_indices_callback(
-    const PointCloudConstPtr & cloud,
-    const PointIndicesConstPtr & indices);
+    const sensor_msgs::msg::PointCloud2::ConstSharedPtr & cloud,
+    const pcl_msgs::msg::PointIndices::ConstSharedPtr & indices);
 
-private:
-  /** \brief The PCL implementation used. */
-  pcl::ConvexHull<pcl::PointXYZ> impl_;
+  /** \brief Input point cloud callback.
+    * \param cloud the pointer to the input point cloud
+    */
+  void input_callback(
+    const sensor_msgs::msg::PointCloud2::ConstSharedPtr & cloud)
+  {
+    input_indices_callback(cloud, nullptr);
+  }
 
   /** \brief The input PointCloud subscriber. */
-  rclcpp::Subscription<PointCloud>::SharedPtr sub_input_;
+  rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr sub_input_;
 
   /** \brief Publisher for PolygonStamped. */
-  rclcpp::Publisher<PolygonStamped>::SharedPtr pub_plane_;
+  rclcpp::Publisher<geometry_msgs::msg::PolygonStamped>::SharedPtr pub_plane_;
 
   /** \brief Synchronized input, and indices.*/
-  boost::shared_ptr<message_filters::Synchronizer<sync_policies::ExactTime<PointCloud,
-    PointIndices>>> sync_input_indices_e_;
-  boost::shared_ptr<message_filters::Synchronizer<sync_policies::ApproximateTime<PointCloud,
-    PointIndices>>> sync_input_indices_a_;
+  std::shared_ptr<message_filters::Synchronizer<
+    sync_policies::ExactTime<sensor_msgs::msg::PointCloud2, pcl_msgs::msg::PointIndices>>>
+    sync_input_indices_e_;
+  std::shared_ptr<message_filters::Synchronizer<
+    sync_policies::ApproximateTime<sensor_msgs::msg::PointCloud2, pcl_msgs::msg::PointIndices>>>
+    sync_input_indices_a_;
+
+  /** \brief The PCL implementation used. */
+  pcl::ConvexHull<pcl::PointXYZ> impl_;
 
 public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW

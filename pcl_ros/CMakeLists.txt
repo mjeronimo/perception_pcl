@@ -162,15 +162,19 @@ rclcpp_components_register_node(pcl_ros_segmentation
     EXECUTABLE sac_segmentation_from_normals)
 
 ## Declare the pcl_ros_surface library
-#add_library (pcl_ros_surface
+add_library (pcl_ros_surface
 #  src/pcl_ros/surface/surface.cpp
-#  # Compilation is much faster if we include all the following CPP files in surface.cpp
-#  src/pcl_ros/surface/convex_hull.cpp
+  # Compilation is much faster if we include all the following CPP files in surface.cpp
+  src/pcl_ros/surface/convex_hull.cpp
 #  src/pcl_ros/surface/moving_least_squares.cpp
-#)
-#target_link_libraries(pcl_ros_surface ${Boost_LIBRARIES} ${catkin_LIBRARIES} ${PCL_LIBRARIES})
-#add_dependencies(pcl_ros_surface ${PROJECT_NAME}_gencfg)
-#class_loader_hide_library_symbols(pcl_ros_surface)
+)
+target_link_libraries(pcl_ros_surface pcl_ros_tf ${PCL_LIBRARIES})
+ament_target_dependencies(pcl_ros_surface ${dependencies})
+class_loader_hide_library_symbols(pcl_ros_surface)
+
+rclcpp_components_register_node(pcl_ros_surface
+    PLUGIN pcl_ros::ConvexHull2D
+    EXECUTABLE convex_hull)
 
 ## Tools
 

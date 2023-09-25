@@ -31,7 +31,7 @@
  *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  *  POSSIBILITY OF SUCH DAMAGE.
  *
- * $Id: sac_segmentation.h 35564 2011-01-27 07:32:12Z rusu $
+ * $Id: sac_segmentation.hpp 35564 2011-01-27 07:32:12Z rusu $
  *
  */
 
@@ -161,7 +161,7 @@ protected:
   int min_inliers_{0};
 
   /** \brief The type of model to use. */
-  int model_type_{pcl::SacModel::SACMODEL_PLANE};
+  int model_type_{pcl::SacModel::SACMODEL_NORMAL_PLANE};
 
   /** \brief Set to true if a coefficient refinement is required. */
   bool optimize_coefficients_{true};
