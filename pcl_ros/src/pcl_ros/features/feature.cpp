@@ -54,11 +54,11 @@ void pcl_ros::Feature::init_parameters()
   RCLCPP_DEBUG(get_logger(), "Feature: init_parameters");
 
   add_parameter(
-    "k", rclcpp::ParameterValue(k_), integer_range{0, 1000, 0},  // from, to, step
+    "k_search", rclcpp::ParameterValue(k_search_), integer_range{0, 1000, 0},  // from, to, step
     "Number of k-nearest neighbors to search for");
 
   add_parameter(
-    "search_radius", rclcpp::ParameterValue(search_radius_),
+    "radius_search", rclcpp::ParameterValue(radius_search_),
     floating_point_range{0.0, 0.5, 0.0},  // from, to, step
     "Sphere radius for nearest neighbor search");
 
@@ -66,8 +66,8 @@ void pcl_ros::Feature::init_parameters()
     "use_surface", rclcpp::ParameterValue(use_surface_),
     "Whether to listen for incoming point clouds representing the search surface");
 
-  k_ = get_parameter("k").as_int();
-  search_radius_ = get_parameter("search_radius").as_double();
+  k_search_ = get_parameter("k_search").as_int();
+  radius_search_ = get_parameter("radius_search").as_double();
   use_surface_ = get_parameter("use_surface").as_bool();
 
   // Initialize the parameter callback
@@ -77,10 +77,10 @@ void pcl_ros::Feature::init_parameters()
   RCLCPP_DEBUG(
     get_logger(),
     "[init_parameters] Node initialized with the following parameters:\n"
-    " - k              : %d\n"
-    " - search_radius  : %f\n"
+    " - k_search       : %d\n"
+    " - radius_search  : %f\n"
     " - use_surface    : %s\n",
-    k_, search_radius_, use_surface_ ? "true" : "false");
+    k_search_, radius_search_, use_surface_ ? "true" : "false");
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////
@@ -196,27 +196,27 @@ rcl_interfaces::msg::SetParametersResult pcl_ros::Feature::set_parameters_callba
   std::lock_guard<std::mutex> lock(mutex_);
 
   for (const rclcpp::Parameter & param : params) {
-    if (param.get_name() == "k") {
-      int new_k = param.as_int();
-      if (k_ != new_k) {
-        k_ = new_k;
+    if (param.get_name() == "k_search") {
+      int new_k_search = param.as_int();
+      if (k_search_ != new_k_search) {
+        k_search_ = new_k_search;
         RCLCPP_DEBUG(
           get_logger(),
           "[set_parameters_callback] Setting the number of K nearest neighbors to use for each "
           "point: %d.",
-          k_);
+          k_search_);
       }
     }
 
-    if (param.get_name() == "search_radius") {
-      double new_search_radius = param.as_double();
-      if (search_radius_ != new_search_radius) {
-        search_radius_ = new_search_radius;
+    if (param.get_name() == "radius_search") {
+      double new_radius_search = param.as_double();
+      if (radius_search_ != new_radius_search) {
+        radius_search_ = new_radius_search;
         RCLCPP_DEBUG(
           get_logger(),
           "[set_parameters_callback] Setting the nearest neighbors search radius for each point: "
           "%f",
-          search_radius_);
+          radius_search_);
       }
     }
   }
@@ -311,12 +311,12 @@ void pcl_ros::Feature::input_surface_indices_callback(
       cloud->header.frame_id.c_str(), "input");
   }
 
-  if (static_cast<int>(cloud->width * cloud->height) < k_) {
+  if (static_cast<int>(cloud->width * cloud->height) < k_search_) {
     RCLCPP_ERROR(
       get_logger(),
       "[input_surface_indices_callback] Requested number of k-nearest neighbors (%d) is larger "
       "than the PointCloud size (%d)!",
-      k_, (int)(cloud->width * cloud->height));
+      k_search_, (int)(cloud->width * cloud->height));
     emptyPublish(cloud);
     return;
   }
@@ -356,8 +356,7 @@ void initializeEmptyPointCloud2(sensor_msgs::msg::PointCloud2 & msg)
   sensor_msgs::PointCloud2Iterator<uint8_t> iter_g(msg, "g");
   sensor_msgs::PointCloud2Iterator<uint8_t> iter_b(msg, "b");
 
-  for (; iter_x != iter_x.end(); ++iter_x, ++iter_y, ++iter_z, ++iter_r, ++iter_g, ++iter_b)
-  {
+  for (; iter_x != iter_x.end(); ++iter_x, ++iter_y, ++iter_z, ++iter_r, ++iter_g, ++iter_b) {
     *iter_x = 0.0;
     *iter_y = 0.0;
     *iter_z = 0.0;
@@ -367,7 +366,7 @@ void initializeEmptyPointCloud2(sensor_msgs::msg::PointCloud2 & msg)
   }
 }
 
-  ////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////
 void pcl_ros::Feature::input_no_filters_callback(
   const sensor_msgs::msg::PointCloud2::ConstSharedPtr & input)
 {
@@ -378,20 +377,20 @@ void pcl_ros::Feature::input_no_filters_callback(
   // const sensor_msgs::msg::PointCloud2::ConstSharedPtr & cloud_surface,
   // const PointIndicesConstPtr & indices);
 
-  auto surface = nullptr; // std::make_shared<sensor_msgs::msg::PointCloud2>();
-  auto indices = nullptr; // std::make_shared<PointIndices>();
+  auto surface = nullptr;  // std::make_shared<sensor_msgs::msg::PointCloud2>();
+  auto indices = nullptr;  // std::make_shared<PointIndices>();
 
   // initializeEmptyPointCloud2(*surface);
 
   // TODO(mjeronimo) copy the timestamp or use now()?
   // surface->header.stamp = input->header.stamp;
-  //indices->header.stamp = input->header.stamp;
+  // indices->header.stamp = input->header.stamp;
 
   input_surface_indices_callback(
-    //input, sensor_msgs::msg::PointCloud2::ConstSharedPtr(),
-    //pcl_msgs::msg::PointIndices::ConstSharedPtr());
+    // input, sensor_msgs::msg::PointCloud2::ConstSharedPtr(),
+    // pcl_msgs::msg::PointIndices::ConstSharedPtr());
     input, surface, indices);
-    //pcl_msgs::msg::PointIndices::ConstSharedPtr());
+  // pcl_msgs::msg::PointIndices::ConstSharedPtr());
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////
@@ -427,11 +426,11 @@ pcl_ros::FeatureFromNormals::FeatureFromNormals(
 void pcl_ros::FeatureFromNormals::init_parameters()
 {
   add_parameter(
-    "k", rclcpp::ParameterValue(k_), integer_range{0, 1000, 0},  // from, to, step
+    "k_search", rclcpp::ParameterValue(k_search_), integer_range{0, 1000, 0},  // from, to, step
     "Number of k-nearest neighbors to search for");
 
   add_parameter(
-    "search_radius", rclcpp::ParameterValue(search_radius_),
+    "radius_search", rclcpp::ParameterValue(radius_search_),
     floating_point_range{0.0, 0.5, 0.0},  // from, to, step
     "Sphere radius for nearest neighbor search");
 
@@ -439,8 +438,8 @@ void pcl_ros::FeatureFromNormals::init_parameters()
     "use_surface", rclcpp::ParameterValue(use_surface_),
     "Whether to listen for incoming point clouds representing the search surface");
 
-  k_ = get_parameter("k").as_int();
-  search_radius_ = get_parameter("search_radius").as_double();
+  k_search_ = get_parameter("k_search").as_int();
+  radius_search_ = get_parameter("radius_search").as_double();
   use_surface_ = get_parameter("use_surface").as_bool();
 
   // Initialize the parameter callback
@@ -450,10 +449,10 @@ void pcl_ros::FeatureFromNormals::init_parameters()
   RCLCPP_DEBUG(
     get_logger(),
     "[init_parameters] Node initialized with the following parameters:\n"
-    " - k              : %d\n"
-    " - search_radius  : %f\n"
+    " - k_search       : %d\n"
+    " - radius_search  : %f\n"
     " - use_surface    : %s\n",
-    k_, search_radius_, use_surface_ ? "true" : "false");
+    k_search_, radius_search_, use_surface_ ? "true" : "false");
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////
@@ -569,27 +568,27 @@ rcl_interfaces::msg::SetParametersResult pcl_ros::FeatureFromNormals::set_parame
   std::lock_guard<std::mutex> lock(mutex_);
 
   for (const rclcpp::Parameter & param : params) {
-    if (param.get_name() == "k") {
-      int new_k = param.as_int();
-      if (k_ != new_k) {
-        k_ = new_k;
+    if (param.get_name() == "k_search") {
+      int new_k_search = param.as_int();
+      if (k_search_ != new_k_search) {
+        k_search_ = new_k_search;
         RCLCPP_DEBUG(
           get_logger(),
           "[set_parameters_callback] Setting the number of K nearest neighbors to use for each "
           "point: %d.",
-          k_);
+          k_search_);
       }
     }
 
-    if (param.get_name() == "search_radius") {
-      double new_search_radius = param.as_double();
-      if (search_radius_ != new_search_radius) {
-        search_radius_ = new_search_radius;
+    if (param.get_name() == "radius_search") {
+      double new_radius_search = param.as_double();
+      if (radius_search_ != new_radius_search) {
+        radius_search_ = new_radius_search;
         RCLCPP_DEBUG(
           get_logger(),
           "[set_parameters_callback] Setting the nearest neighbors search radius for each point: "
           "%f",
-          search_radius_);
+          radius_search_);
       }
     }
   }
@@ -702,12 +701,12 @@ void pcl_ros::FeatureFromNormals::input_normals_surface_indices_callback(
   }
   ///
 
-  if (static_cast<int>(cloud->width * cloud->height) < k_) {
+  if (static_cast<int>(cloud->width * cloud->height) < k_search_) {
     RCLCPP_ERROR(
       get_logger(),
       "[input_normals_surface_indices_callback] Requested number of k-nearest neighbors (%d) "
       "is larger than the PointCloud size (%d)!",
-      k_, (int)(cloud->width * cloud->height));
+      k_search_, (int)(cloud->width * cloud->height));
     emptyPublish(cloud);
     return;
   }
@@ -722,7 +721,8 @@ void pcl_ros::FeatureFromNormals::input_normals_surface_indices_callback(
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////
-void pcl_ros::FeatureFromNormals::input_callback(const sensor_msgs::msg::PointCloud2::ConstSharedPtr & input)
+void pcl_ros::FeatureFromNormals::input_callback(
+  const sensor_msgs::msg::PointCloud2::ConstSharedPtr & input)
 {
   RCLCPP_DEBUG(get_logger(), "FeatureFromNormals::input_callback");
 
@@ -737,4 +737,3 @@ void pcl_ros::FeatureFromNormals::input_callback(const sensor_msgs::msg::PointCl
 
   RCLCPP_DEBUG(get_logger(), "FeatureFromNormals::input_callback: return");
 }
-

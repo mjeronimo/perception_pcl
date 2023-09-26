@@ -122,10 +122,10 @@ protected:
   std::mutex mutex_;
 
   /** \brief The number of K nearest neighbors to use for each point. */
-  int k_{10};
+  int k_search_{10};
 
   /** \brief The nearest neighbors search radius for each point. */
-  double search_radius_{0.0};
+  double radius_search_{0.0};
 
   /** \brief Set to true if the node needs to listen for incoming point
    * clouds representing the search surface.
@@ -220,10 +220,10 @@ protected:
   std::mutex mutex_;
 
   /** \brief The number of K nearest neighbors to use for each point. */
-  int k_{10};
+  int k_search_{10};
 
   /** \brief The nearest neighbors search radius for each point. */
-  double search_radius_{0.0};
+  double radius_search_{0.0};
 
   /** \brief Set to true if the node needs to listen for incoming point
    * clouds representing the search surface.
