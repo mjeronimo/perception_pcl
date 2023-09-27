@@ -96,12 +96,12 @@ void pcl_ros::Feature::subscribe()
     // Create the objects here
     if (approximate_sync_) {
       sync_input_surface_indices_a_ =
-        boost::make_shared<message_filters::Synchronizer<sync_policies::ApproximateTime<
+        std::make_shared<message_filters::Synchronizer<sync_policies::ApproximateTime<
           sensor_msgs::msg::PointCloud2, sensor_msgs::msg::PointCloud2, PointIndices>>>(
           max_queue_size_);
     } else {
       sync_input_surface_indices_e_ =
-        boost::make_shared<message_filters::Synchronizer<sync_policies::ExactTime<
+        std::make_shared<message_filters::Synchronizer<sync_policies::ExactTime<
           sensor_msgs::msg::PointCloud2, sensor_msgs::msg::PointCloud2, PointIndices>>>(
           max_queue_size_);
     }
@@ -466,12 +466,12 @@ void pcl_ros::FeatureFromNormals::subscribe()
   // Create the objects here
   if (approximate_sync_) {
     sync_input_normals_surface_indices_a_ =
-      boost::make_shared<message_filters::Synchronizer<sync_policies::ApproximateTime<
+      std::make_shared<message_filters::Synchronizer<sync_policies::ApproximateTime<
         sensor_msgs::msg::PointCloud2, sensor_msgs::msg::PointCloud2, sensor_msgs::msg::PointCloud2,
         PointIndices>>>(max_queue_size_);
   } else {
     sync_input_normals_surface_indices_e_ =
-      boost::make_shared<message_filters::Synchronizer<sync_policies::ExactTime<
+      std::make_shared<message_filters::Synchronizer<sync_policies::ExactTime<
         sensor_msgs::msg::PointCloud2, sensor_msgs::msg::PointCloud2, sensor_msgs::msg::PointCloud2,
         PointIndices>>>(max_queue_size_);
   }

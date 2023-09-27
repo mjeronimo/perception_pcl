@@ -139,9 +139,9 @@ private:
   rclcpp::Publisher<PointCloud> pub_normals_;
 
   /** \brief Synchronized input, and indices.*/
-  boost::shared_ptr<message_filters::Synchronizer<sync_policies::ExactTime<PointCloudIn,
+  std::shared_ptr<message_filters::Synchronizer<sync_policies::ExactTime<PointCloudIn,
     PointIndices>>> sync_input_indices_e_;
-  boost::shared_ptr<message_filters::Synchronizer<sync_policies::ApproximateTime<PointCloudIn,
+  std::shared_ptr<message_filters::Synchronizer<sync_policies::ApproximateTime<PointCloudIn,
     PointIndices>>> sync_input_indices_a_;
 
 public:

@@ -163,14 +163,14 @@ void pcl_ros::ConvexHull2D::input_indices_callback(
   impl_.setIndices(indices_ptr);
 
   // Generate the PCL data types
-  boost::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> pcl_cloud =
-    boost::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
+  std::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> pcl_cloud =
+    std::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
   pcl::fromROSMsg(*cloud, *pcl_cloud);
   impl_.setInputCloud(pcl_cloud);
 
   // Estimate the feature
-  boost::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> pcl_output =
-    boost::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
+  std::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> pcl_output =
+    std::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
   impl_.reconstruct(*pcl_output);
 
   // If more than 3 points are present, send a PolygonStamped hull too

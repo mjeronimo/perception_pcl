@@ -144,10 +144,10 @@ protected:
   message_filters::PassThrough<sensor_msgs::msg::PointCloud2> nf_pc_;
 
   /** \brief Synchronized input, surface, and point indices.*/
-  boost::shared_ptr<message_filters::Synchronizer<sync_policies::ApproximateTime<
+  std::shared_ptr<message_filters::Synchronizer<sync_policies::ApproximateTime<
     sensor_msgs::msg::PointCloud2, sensor_msgs::msg::PointCloud2, pcl_msgs::msg::PointIndices>>>
     sync_input_surface_indices_a_;
-  boost::shared_ptr<message_filters::Synchronizer<sync_policies::ExactTime<
+  std::shared_ptr<message_filters::Synchronizer<sync_policies::ExactTime<
     sensor_msgs::msg::PointCloud2, sensor_msgs::msg::PointCloud2, pcl_msgs::msg::PointIndices>>>
     sync_input_surface_indices_e_;
 
@@ -245,12 +245,12 @@ protected:
   message_filters::Subscriber<sensor_msgs::msg::PointCloud2> sub_normals_filter_;
 
   /** \brief Synchronized input, normals, surface, and point indices.*/
-  boost::shared_ptr<message_filters::Synchronizer<sync_policies::ApproximateTime<
+  std::shared_ptr<message_filters::Synchronizer<sync_policies::ApproximateTime<
     sensor_msgs::msg::PointCloud2, sensor_msgs::msg::PointCloud2, sensor_msgs::msg::PointCloud2,
     pcl_msgs::msg::PointIndices>>>
     sync_input_normals_surface_indices_a_;
 
-  boost::shared_ptr<message_filters::Synchronizer<sync_policies::ExactTime<
+  std::shared_ptr<message_filters::Synchronizer<sync_policies::ExactTime<
     sensor_msgs::msg::PointCloud2, sensor_msgs::msg::PointCloud2, sensor_msgs::msg::PointCloud2,
     pcl_msgs::msg::PointIndices>>>
     sync_input_normals_surface_indices_e_;

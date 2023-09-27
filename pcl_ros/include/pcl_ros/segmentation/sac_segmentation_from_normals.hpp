@@ -127,10 +127,10 @@ protected:
   message_filters::PassThrough<pcl_msgs::msg::PointIndices> nf_;
 
   /** \brief Synchronized input, normals, and indices.*/
-  boost::shared_ptr<message_filters::Synchronizer<sync_policies::ApproximateTime<
+  std::shared_ptr<message_filters::Synchronizer<sync_policies::ApproximateTime<
     sensor_msgs::msg::PointCloud2, sensor_msgs::msg::PointCloud2, pcl_msgs::msg::PointIndices>>>
     sync_input_normals_indices_a_;
-  boost::shared_ptr<message_filters::Synchronizer<sync_policies::ExactTime<
+  std::shared_ptr<message_filters::Synchronizer<sync_policies::ExactTime<
     sensor_msgs::msg::PointCloud2, sensor_msgs::msg::PointCloud2, pcl_msgs::msg::PointIndices>>>
     sync_input_normals_indices_e_;
 

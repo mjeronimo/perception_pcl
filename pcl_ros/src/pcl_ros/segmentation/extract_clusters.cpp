@@ -126,7 +126,7 @@ void pcl_ros::EuclideanClusterExtraction::subscribe()
     sub_indices_filter_.subscribe(this, "indices", custom_qos_profile);
 
     if (approximate_sync_) {
-      sync_input_indices_a_ = boost::make_shared<
+      sync_input_indices_a_ = std::make_shared<
         message_filters::Synchronizer<message_filters::sync_policies::ApproximateTime<
           sensor_msgs::msg::PointCloud2, pcl_msgs::msg::PointIndices>>>(max_queue_size_);
       sync_input_indices_a_->connectInput(sub_input_filter_, sub_indices_filter_);
@@ -135,7 +135,7 @@ void pcl_ros::EuclideanClusterExtraction::subscribe()
         std::placeholders::_2));
     } else {
       sync_input_indices_e_ =
-        boost::make_shared<message_filters::Synchronizer<message_filters::sync_policies::ExactTime<
+        std::make_shared<message_filters::Synchronizer<message_filters::sync_policies::ExactTime<
           sensor_msgs::msg::PointCloud2, pcl_msgs::msg::PointIndices>>>(max_queue_size_);
       sync_input_indices_e_->connectInput(sub_input_filter_, sub_indices_filter_);
       sync_input_indices_e_->registerCallback(bind(
@@ -271,8 +271,8 @@ void pcl_ros::EuclideanClusterExtraction::input_indices_callback(
   }
 
   // Convert from cloud to pcl_cloud
-  boost::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> pcl_cloud =
-    boost::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
+  std::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> pcl_cloud =
+    std::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
   pcl::fromROSMsg(*cloud, *pcl_cloud);
 
   impl_.setInputCloud(pcl_cloud);
@@ -305,8 +305,8 @@ void pcl_ros::EuclideanClusterExtraction::input_indices_callback(
       }
 
       // Copy the clusters to the new PointCloud output
-      boost::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> pcl_output =
-        boost::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
+      std::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> pcl_output =
+        std::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
       pcl::copyPointCloud(*pcl_cloud, clusters[i].indices, *pcl_output);
 
       // Convert to a ROS message

@@ -40,6 +40,7 @@
 #include <pcl/common/io.h>
 #include <pcl_conversions/pcl_conversions.h>
 
+#include <functional>
 #include <vector>
 
 //////////////////////////////////////////////////////////////////////////////////////////////
@@ -91,12 +92,12 @@ void pcl_ros::SACSegmentationFromNormals::subscribe()
 
   if (approximate_sync_) {
     sync_input_normals_indices_a_ =
-      boost::make_shared<message_filters::Synchronizer<sync_policies::ApproximateTime<
+      std::make_shared<message_filters::Synchronizer<sync_policies::ApproximateTime<
         sensor_msgs::msg::PointCloud2, sensor_msgs::msg::PointCloud2,
         pcl_msgs::msg::PointIndices>>>(max_queue_size_);
   } else {
     sync_input_normals_indices_e_ =
-      boost::make_shared<message_filters::Synchronizer<sync_policies::ExactTime<
+      std::make_shared<message_filters::Synchronizer<sync_policies::ExactTime<
         sensor_msgs::msg::PointCloud2, sensor_msgs::msg::PointCloud2,
         pcl_msgs::msg::PointIndices>>>(max_queue_size_);
   }
@@ -117,7 +118,7 @@ void pcl_ros::SACSegmentationFromNormals::subscribe()
     }
   } else {
     // Create a different callback for copying over the timestamp to fake indices
-    sub_input_filter_.registerCallback(bind(&SACSegmentationFromNormals::input_callback, this, _1));
+    sub_input_filter_.registerCallback(bind(&SACSegmentationFromNormals::input_callback, this, std::placeholders::_1));
 
     if (approximate_sync_) {
       sync_input_normals_indices_a_->connectInput(sub_input_filter_, sub_normals_filter_, nf_);
@@ -129,10 +130,10 @@ void pcl_ros::SACSegmentationFromNormals::subscribe()
   // Register callbacks
   if (approximate_sync_) {
     sync_input_normals_indices_a_->registerCallback(
-      bind(&SACSegmentationFromNormals::input_normals_indices_callback, this, _1, _2, _3));
+      bind(&SACSegmentationFromNormals::input_normals_indices_callback, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
   } else {
     sync_input_normals_indices_e_->registerCallback(
-      bind(&SACSegmentationFromNormals::input_normals_indices_callback, this, _1, _2, _3));
+      bind(&SACSegmentationFromNormals::input_normals_indices_callback, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
   }
 }
 
@@ -281,13 +282,13 @@ void pcl_ros::SACSegmentationFromNormals::input_normals_indices_callback(
     return;
   }
 
-  boost::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> pcl_cloud =
-    boost::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
+  std::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> pcl_cloud =
+    std::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
   pcl::fromROSMsg(*cloud, *pcl_cloud);
   impl_.setInputCloud(pcl_cloud);
 
-  boost::shared_ptr<pcl::PointCloud<pcl::Normal>> pcl_cloud_normals =
-    boost::make_shared<pcl::PointCloud<pcl::Normal>>();
+  std::shared_ptr<pcl::PointCloud<pcl::Normal>> pcl_cloud_normals =
+    std::make_shared<pcl::PointCloud<pcl::Normal>>();
   pcl::fromROSMsg(*cloud_normals, *pcl_cloud_normals);
   impl_.setInputNormals(pcl_cloud_normals);
 

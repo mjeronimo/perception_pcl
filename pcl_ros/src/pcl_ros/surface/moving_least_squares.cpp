@@ -97,7 +97,7 @@ pcl_ros::MovingLeastSquares::subscribe()
 
     if (approximate_sync_) {
       sync_input_indices_a_ =
-        boost::make_shared<message_filters::Synchronizer<
+        std::make_shared<message_filters::Synchronizer<
             message_filters::sync_policies::ApproximateTime<
               PointCloudIn, PointIndices>>>(max_queue_size_);
       // surface not enabled, connect the input-indices duo and register
@@ -108,7 +108,7 @@ pcl_ros::MovingLeastSquares::subscribe()
           this, _1, _2));
     } else {
       sync_input_indices_e_ =
-        boost::make_shared<message_filters::Synchronizer<
+        std::make_shared<message_filters::Synchronizer<
             message_filters::sync_policies::ExactTime<PointCloudIn,
             PointIndices>>>(max_queue_size_);
       // surface not enabled, connect the input-indices duo and register

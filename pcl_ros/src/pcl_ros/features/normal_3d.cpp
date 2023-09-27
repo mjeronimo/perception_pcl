@@ -54,22 +54,22 @@ void pcl_ros::NormalEstimation::computePublish(
   RCLCPP_DEBUG(get_logger(), "NormalEstimation::computePublish");
 
   // Set the parameters
-  impl_.setKSearch(k_);
-  impl_.setRadiusSearch(search_radius_);
+  impl_.setKSearch(k_search_);
+  impl_.setRadiusSearch(radius_search_);
 
   RCLCPP_DEBUG(get_logger(), "NormalEstimation::computePublish: 1");
 
   // Convert from cloud to pcl_cloud
-  boost::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> pcl_cloud =
-    boost::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
+  std::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> pcl_cloud =
+    std::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
   pcl::fromROSMsg(*cloud, *pcl_cloud);
 
   RCLCPP_DEBUG(get_logger(), "NormalEstimation::computePublish: 2");
 
   // Convert from surface to pcl_surface
   if (surface) {
-    boost::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> pcl_surface =
-      boost::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
+    std::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> pcl_surface =
+      std::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
     RCLCPP_DEBUG(get_logger(), "NormalEstimation::computePublish: 2.1");
     pcl::fromROSMsg(*surface, *pcl_surface);
     impl_.setSearchSurface(pcl_surface);

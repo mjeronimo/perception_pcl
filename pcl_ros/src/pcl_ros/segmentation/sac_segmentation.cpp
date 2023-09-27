@@ -40,6 +40,7 @@
 #include <pcl/common/io.h>
 #include <pcl_conversions/pcl_conversions.h>
 
+#include <functional>
 #include <vector>
 
 //////////////////////////////////////////////////////////////////////////////////////////////
@@ -213,7 +214,7 @@ void pcl_ros::SACSegmentation::subscribe()
 
       // Synchronize the two topics. No need for an approximate synchronizer here, as we'll
       // match the timestamps exactly
-      sync_input_indices_e_ = boost::make_shared<message_filters::Synchronizer<
+      sync_input_indices_e_ = std::make_shared<message_filters::Synchronizer<
         sync_policies::ExactTime<sensor_msgs::msg::PointCloud2, pcl_msgs::msg::PointIndices>>>(
         max_queue_size_);
       sync_input_indices_e_->connectInput(sub_input_filter_, nf_pi_);
@@ -223,14 +224,14 @@ void pcl_ros::SACSegmentation::subscribe()
     } else {  // "latched_indices" not set, proceed with regular <input,indices> pairs
       if (approximate_sync_) {
         sync_input_indices_a_ =
-          boost::make_shared<message_filters::Synchronizer<sync_policies::ApproximateTime<
+          std::make_shared<message_filters::Synchronizer<sync_policies::ApproximateTime<
             sensor_msgs::msg::PointCloud2, pcl_msgs::msg::PointIndices>>>(max_queue_size_);
         sync_input_indices_a_->connectInput(sub_input_filter_, sub_indices_filter_);
         sync_input_indices_a_->registerCallback(bind(
           &SACSegmentation::input_indices_callback, this, std::placeholders::_1,
           std::placeholders::_2));
       } else {
-        sync_input_indices_e_ = boost::make_shared<message_filters::Synchronizer<
+        sync_input_indices_e_ = std::make_shared<message_filters::Synchronizer<
           sync_policies::ExactTime<sensor_msgs::msg::PointCloud2, pcl_msgs::msg::PointIndices>>>(
           max_queue_size_);
         sync_input_indices_e_->connectInput(sub_input_filter_, sub_indices_filter_);
@@ -448,8 +449,8 @@ void pcl_ros::SACSegmentation::input_indices_callback(
     indices_ptr.reset(new std::vector<int>(indices->indices));
   }
 
-  boost::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> pcl_cloud_tf =
-    boost::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
+  std::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> pcl_cloud_tf =
+    std::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
   pcl::fromROSMsg(*cloud_tf, *pcl_cloud_tf);
 
   // Acquire the mutex before accessing the underlying implementation */

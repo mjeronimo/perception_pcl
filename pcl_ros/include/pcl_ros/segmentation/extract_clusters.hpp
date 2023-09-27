@@ -124,10 +124,10 @@ protected:
   rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr sub_input_;
 
   /** \brief Synchronized input, and indices.*/
-  boost::shared_ptr<message_filters::Synchronizer<
+  std::shared_ptr<message_filters::Synchronizer<
     sync_policies::ExactTime<sensor_msgs::msg::PointCloud2, pcl_msgs::msg::PointIndices>>>
     sync_input_indices_e_;
-  boost::shared_ptr<message_filters::Synchronizer<
+  std::shared_ptr<message_filters::Synchronizer<
     sync_policies::ApproximateTime<sensor_msgs::msg::PointCloud2, pcl_msgs::msg::PointIndices>>>
     sync_input_indices_a_;
 

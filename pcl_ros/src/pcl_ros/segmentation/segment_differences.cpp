@@ -165,13 +165,13 @@ void pcl_ros::SegmentDifferences::input_target_callback(
     cloud_target->header.stamp.sec, cloud_target->header.stamp.nanosec,
     cloud_target->header.frame_id.c_str(), "target");
 
-  boost::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> pcl_cloud =
-    boost::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
+  std::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> pcl_cloud =
+    std::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
   pcl::fromROSMsg(*cloud, *pcl_cloud);
   impl_.setInputCloud(pcl_cloud);
 
-  boost::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> pcl_cloud_target =
-    boost::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
+  std::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> pcl_cloud_target =
+    std::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
   pcl::fromROSMsg(*cloud_target, *pcl_cloud_target);
   impl_.setTargetCloud(pcl_cloud_target);
 

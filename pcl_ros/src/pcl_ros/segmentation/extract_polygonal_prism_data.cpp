@@ -271,14 +271,14 @@ void pcl_ros::ExtractPolygonalPrismData::input_hull_indices_callback(
     }
 
     // Convert from planar_hull to pcl_hull
-    boost::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> pcl_hull =
-      boost::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
+    std::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> pcl_hull =
+      std::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
     pcl::fromROSMsg(planar_hull, *pcl_hull);
     impl_.setInputPlanarHull(pcl_hull);
   } else {
     // Convert from hull to pcl_hull
-    boost::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> pcl_hull =
-      boost::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
+    std::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> pcl_hull =
+      std::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
     pcl::fromROSMsg(*hull, *pcl_hull);
     impl_.setInputPlanarHull(pcl_hull);
   }
@@ -289,8 +289,8 @@ void pcl_ros::ExtractPolygonalPrismData::input_hull_indices_callback(
   }
 
   // Convert from cloud to pcl_cloud
-  boost::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> pcl_cloud =
-    boost::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
+  std::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> pcl_cloud =
+    std::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
   pcl::fromROSMsg(*cloud, *pcl_cloud);
 
   impl_.setInputCloud(pcl_cloud);
